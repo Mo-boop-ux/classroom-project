@@ -140,4 +140,83 @@ public function dashboard()
     return view('dashboard', compact('classes'));
 }
 
+
+public function leave($id)
+{
+    $classroom = Classroom::findOrFail($id);
+
+    // remove student from pivot table
+    $classroom->students()->detach(auth()->id());
+
+    return back()->with('success', 'You left the class successfully');
+}
+
+public function update(Request $request, $id)
+{
+    $classroom = Classroom::findOrFail($id);
+
+    if ($classroom->teacher_id !== auth()->id()) {
+        abort(403);
+    }
+
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'section' => 'nullable|string',
+        'subject' => 'nullable|string',
+    ]);
+
+    $classroom->update($request->only(['name', 'section', 'subject']));
+
+    return redirect()->route('classrooms.index')
+        ->with('success', 'Classroom updated successfully');
+}
+
+
+public function edit($id)
+{
+    $classroom = Classroom::findOrFail($id);
+
+    // only teacher can edit
+    if ($classroom->teacher_id !== auth()->id()) {
+        abort(403);
+    }
+
+    return view('classrooms.edit', compact('classroom'));
+}
+
+public function destroy($id)
+{
+    $classroom = Classroom::with(['posts.comments', 'assignments.submissions'])->findOrFail($id);
+
+    // only teacher can delete
+    if ($classroom->teacher_id !== auth()->id()) {
+        abort(403);
+    }
+
+    // delete submissions
+    foreach ($classroom->assignments as $assignment) {
+        $assignment->submissions()->delete();
+    }
+
+    // delete assignments
+    $classroom->assignments()->delete();
+
+    // delete comments
+    foreach ($classroom->posts as $post) {
+        $post->comments()->delete();
+    }
+
+    // delete posts
+    $classroom->posts()->delete();
+
+    // remove students (pivot table)
+    $classroom->students()->detach();
+
+    // delete classroom
+    $classroom->delete();
+
+    return redirect()->route('classrooms.index')
+        ->with('success', 'Classroom deleted successfully');
+}
+
 }

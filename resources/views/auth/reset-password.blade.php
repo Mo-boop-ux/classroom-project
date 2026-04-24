@@ -1,39 +1,94 @@
-<x-guest-layout>
-    <form method="POST" action="{{ route('password.store') }}">
-        @csrf
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reset Password</title>
 
-        <!-- Password Reset Token -->
-        <input type="hidden" name="token" value="{{ $request->route('token') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
-        <!-- Email Address -->
-        <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email', $request->email)" required autofocus autocomplete="username" />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
-        </div>
+    <style>
+        body {
+            background: #f5f7fb;
+        }
 
-        <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
-            <x-text-input id="password" class="block mt-1 w-full" type="password" name="password" required autocomplete="new-password" />
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
-        </div>
+        .auth-box {
+            max-width: 450px;
+            margin: 80px auto;
+        }
 
-        <!-- Confirm Password -->
-        <div class="mt-4">
-            <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+        }
 
-            <x-text-input id="password_confirmation" class="block mt-1 w-full"
-                                type="password"
-                                name="password_confirmation" required autocomplete="new-password" />
+        .btn-primary {
+            width: 100%;
+        }
+    </style>
+</head>
 
-            <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
-        </div>
+<body>
 
-        <div class="flex items-center justify-end mt-4">
-            <x-primary-button>
-                {{ __('Reset Password') }}
-            </x-primary-button>
-        </div>
-    </form>
-</x-guest-layout>
+<div class="auth-box">
+
+    <div class="card p-4">
+
+        <h3 class="fw-bold text-center mb-2">Reset Password</h3>
+
+        <p class="text-muted text-center mb-4">
+            Enter your new password below
+        </p>
+
+        <form method="POST" action="{{ route('password.store') }}">
+            @csrf
+
+            {{-- TOKEN --}}
+            <input type="hidden" name="token" value="{{ $request->route('token') }}">
+
+            {{-- EMAIL --}}
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input type="email"
+                       name="email"
+                       class="form-control"
+                       value="{{ old('email', $request->email) }}"
+                       required
+                       autofocus>
+                @error('email')
+                    <small class="text-danger">{{ $message }}</small>
+                @enderror
+            </div>
+
+            {{-- PASSWORD --}}
+            <div class="mb-3">
+                <label class="form-label">New Password</label>
+                <input type="password"
+                       name="password"
+                       class="form-control"
+                       required>
+                @error('password')
+                    <small class="text-danger">{{ $message }}</small>
+                @enderror
+            </div>
+
+            {{-- CONFIRM PASSWORD --}}
+            <div class="mb-3">
+                <label class="form-label">Confirm Password</label>
+                <input type="password"
+                       name="password_confirmation"
+                       class="form-control"
+                       required>
+            </div>
+
+            <button class="btn btn-primary">
+                Reset Password
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+</html>

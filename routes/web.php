@@ -65,12 +65,26 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/classrooms/{id}', [ClassroomController::class, 'show'])
         ->name('classrooms.show');
+    Route::get('/classrooms/{id}/edit', [ClassroomController::class, 'edit'])
+    ->name('classrooms.edit');
+
+    Route::put('/classrooms/{id}', [ClassroomController::class, 'update'])
+    ->name('classrooms.update');
+
+    Route::delete('/classrooms/{id}', [ClassroomController::class, 'destroy'])
+    ->name('classrooms.destroy');
+    
+    Route::post('/classrooms/{id}/leave', [ClassroomController::class, 'leave'])
+    ->name('classrooms.leave');
 
     Route::get('/classrooms/{id}/classwork', [ClassroomController::class, 'classwork'])
         ->name('classrooms.classwork');
 
     Route::get('/classrooms/{id}/assignments', [ClassroomController::class, 'assignments'])
         ->name('classrooms.assignments');
+
+    Route::delete('/assignments/{id}', [AssignmentController::class, 'destroy'])
+    ->name('assignments.destroy');
 
     Route::get('/classrooms/{id}/people', [ClassroomController::class, 'people'])
         ->name('classrooms.people');
@@ -83,6 +97,15 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/posts', [PostController::class, 'store'])
         ->name('posts.store');
 
+    Route::get('/posts/{id}/edit', [PostController::class, 'edit'])
+    ->name('posts.edit');
+
+    Route::put('/posts/{id}', [PostController::class, 'update'])
+    ->name('posts.update');
+
+    Route::delete('/posts/{id}', [PostController::class, 'destroy'])
+    ->name('posts.destroy');
+
     /*
     |--------------------------------------------------------------------------
     | COMMENTS
@@ -90,6 +113,15 @@ Route::middleware(['auth'])->group(function () {
     */
     Route::post('/comments', [CommentController::class, 'store'])
         ->name('comments.store');
+
+    Route::get('/comments/{id}/edit', [CommentController::class, 'edit'])
+    ->name('comments.edit');
+
+    Route::put('/comments/{id}', [CommentController::class, 'update'])
+    ->name('comments.update');
+
+    Route::delete('/comments/{id}', [CommentController::class, 'destroy'])
+    ->name('comments.destroy');
 
     /*
     |--------------------------------------------------------------------------
@@ -104,6 +136,12 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/assignments/{id}', [AssignmentController::class, 'show'])
         ->name('assignments.show');
+
+    Route::get('/assignments/{id}/edit', [AssignmentController::class, 'edit'])
+    ->name('assignments.edit');
+
+    Route::put('/assignments/{id}', [AssignmentController::class, 'update'])
+    ->name('assignments.update');
 
     /*
     |--------------------------------------------------------------------------

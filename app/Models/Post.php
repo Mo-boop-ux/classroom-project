@@ -13,7 +13,8 @@ protected $fillable = [
     'title',
     'description',
     'classroom_id',
-    'user_id'
+    'user_id',
+    'file'
 ];
 public function classroom()
 {
