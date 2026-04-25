@@ -18,26 +18,20 @@
 
                 <input type="hidden" name="classroom_id" value="{{ $classroom->id }}">
 
-                @error('description')
-                    <div class="text-danger mb-2">{{ $message }}</div>
-                @enderror
-
                 <textarea name="description"
                           class="form-control mb-2"
                           placeholder="Share something with your class..."
                           required>{{ old('description') }}</textarea>
 
-                <div class="d-flex gap-2 align-items-center">
-                    <input type="file" name="file" class="form-control">
+                {{-- MULTIPLE FILES --}}
+                <input type="file"
+                       name="files[]"
+                       multiple
+                       class="form-control mb-2">
 
-                    <button class="btn btn-primary">
-                        Post
-                    </button>
-                </div>
-
-                @error('file')
-                    <div class="text-danger mt-2">{{ $message }}</div>
-                @enderror
+                <button class="btn btn-primary">
+                    Post
+                </button>
 
             </form>
 
@@ -45,67 +39,66 @@
 
     </div>
 
-
     {{-- ================= POSTS ================= --}}
     @forelse($posts as $post)
 
         @php
             $isAssignment = !empty($post->assignment_id);
-            $openLink = $isAssignment
-                ? route('assignments.show', $post->assignment_id)
-                : null;
         @endphp
 
-        <div class="card shadow-sm mb-3 border-0 post-card position-relative">
+        <div class="card shadow-sm mb-3 border-0 post-card position-relative overflow-hidden">
 
-            {{-- 🔥 CLICKABLE OVERLAY ONLY FOR ASSIGNMENTS --}}
+            {{-- CLICK ONLY IF ASSIGNMENT --}}
             @if($isAssignment)
-                <a href="{{ $openLink }}" class="stretched-link"></a>
+                <a href="{{ route('assignments.show', $post->assignment_id) }}"
+                   class="stretched-link"></a>
             @endif
 
             <div class="card-body">
 
                 {{-- HEADER --}}
-                <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="d-flex justify-content-between align-items-start">
 
-                    <div class="d-flex align-items-center gap-2">
+                    {{-- LEFT --}}
+                    <div class="d-flex gap-2">
 
-                        <div class="rounded-circle bg-secondary text-white d-flex justify-content-center align-items-center"
-                             style="width:40px;height:40px;">
+                        <div class="avatar">
                             {{ strtoupper($post->user->name[0] ?? 'U') }}
                         </div>
 
                         <div>
+
                             <strong>{{ $post->user->name ?? 'Unknown' }}</strong>
 
                             <small class="text-muted d-block">
                                 {{ $post->created_at->diffForHumans() }}
                             </small>
 
-                            {{-- LABEL --}}
                             @if($isAssignment)
                                 <small class="text-primary fw-bold">
                                     📚 Assignment
                                 </small>
                             @endif
+
                         </div>
 
                     </div>
 
-                    {{-- 3 DOT MENU --}}
+                    {{-- DROPDOWN (FIXED Z-INDEX ISSUE) --}}
                     @if(
                         $post->user_id === auth()->id() ||
                         $post->classroom->teacher_id === auth()->id()
                     )
 
-                        <div class="dropdown position-relative" style="z-index: 9999;">
+                        <div class="dropdown position-relative"
+                             style="z-index: 9999;">
 
-                            <button class="btn btn-sm btn-light"
+                            <button class="btn btn-light btn-sm"
                                     data-bs-toggle="dropdown">
                                 ⋮
                             </button>
 
-                            <ul class="dropdown-menu dropdown-menu-end">
+                            <ul class="dropdown-menu dropdown-menu-end shadow">
 
                                 <li>
                                     <a class="dropdown-item"
@@ -118,14 +111,12 @@
                                     <form method="POST"
                                           action="{{ route('posts.destroy', $post->id) }}"
                                           onsubmit="return confirm('Delete this post?')">
-
                                         @csrf
                                         @method('DELETE')
 
                                         <button class="dropdown-item text-danger">
                                             🗑 Delete
                                         </button>
-
                                     </form>
                                 </li>
 
@@ -138,32 +129,41 @@
                 </div>
 
                 {{-- CONTENT --}}
-                <p class="mb-2">{{ $post->description }}</p>
+                <p class="mt-2 mb-2">{{ $post->description }}</p>
 
-                {{-- ================= ATTACHMENT ================= --}}
-                @if($post->file)
+                {{-- ================= ATTACHMENTS ================= --}}
+                @if($post->attachments->count())
 
                     <div class="attachment-box">
 
-                        @if(Str::endsWith(strtolower($post->file), ['jpg','jpeg','png','gif','webp']))
-                            <img src="{{ asset('storage/' . $post->file) }}"
-                                 class="img-fluid rounded mb-2 clickable-img"
-                                 onclick="openImage(this.src)">
-                        @endif
+                        @foreach($post->attachments as $file)
 
-                        <div class="d-flex justify-content-between align-items-center">
+                            @php
+                                $ext = strtolower(pathinfo($file->file_path, PATHINFO_EXTENSION));
+                            @endphp
 
-                            <small class="text-muted">
-                                {{ basename($post->file) }}
-                            </small>
+                            {{-- IMAGE --}}
+                            @if(in_array($ext, ['jpg','jpeg','png','gif','webp']))
+                                <img src="{{ asset('storage/' . $file->file_path) }}"
+                                     class="img-fluid rounded mb-2 clickable-img">
+                            @endif
 
-                            <a href="{{ asset('storage/' . $post->file) }}"
-                               target="_blank"
-                               class="btn btn-sm btn-outline-primary">
-                                Open
-                            </a>
+                            {{-- FILE LINK --}}
+                            <div class="d-flex justify-content-between align-items-center mb-1">
 
-                        </div>
+                                <small class="text-muted">
+                                    {{ basename($file->file_path) }}
+                                </small>
+
+                                <a href="{{ asset('storage/' . $file->file_path) }}"
+                                   target="_blank"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Open
+                                </a>
+
+                            </div>
+
+                        @endforeach
 
                     </div>
 
@@ -186,68 +186,21 @@
 
                                 <div class="d-flex justify-content-between">
 
-                                    <strong>{{ $comment->user->name ?? 'User' }}</strong>
+                                    <strong>{{ $comment->user->name }}</strong>
 
-                                    <div class="d-flex gap-2">
-
-                                        <small class="text-muted">
-                                            {{ $comment->created_at->diffForHumans() }}
-                                        </small>
-
-                                        @if(
-                                            $comment->user_id === auth()->id() ||
-                                            $post->classroom->teacher_id === auth()->id()
-                                        )
-
-                                            <a href="{{ route('comments.edit', $comment->id) }}"
-                                               class="text-warning small">Edit</a>
-
-                                            <form method="POST"
-                                                  action="{{ route('comments.destroy', $comment->id) }}">
-
-                                                @csrf
-                                                @method('DELETE')
-
-                                                <button class="text-danger border-0 bg-transparent small">
-                                                    Delete
-                                                </button>
-
-                                            </form>
-
-                                        @endif
-
-                                    </div>
+                                    <small class="text-muted">
+                                        {{ $comment->created_at->diffForHumans() }}
+                                    </small>
 
                                 </div>
 
-                                <div class="mt-1">
-                                    {{ $comment->description }}
-                                </div>
+                                <div>{{ $comment->description }}</div>
 
                             </div>
 
                         @empty
                             <small class="text-muted">No comments yet</small>
                         @endforelse
-
-                        {{-- ADD COMMENT --}}
-                        <form method="POST" action="{{ route('comments.store') }}" class="mt-2">
-                            @csrf
-
-                            <input type="hidden" name="post_id" value="{{ $post->id }}">
-
-                            <div class="input-group">
-                                <input type="text"
-                                       name="description"
-                                       class="form-control"
-                                       placeholder="Write a comment..."
-                                       required>
-
-                                <button class="btn btn-outline-primary">
-                                    Send
-                                </button>
-                            </div>
-                        </form>
 
                     </div>
 
@@ -267,12 +220,7 @@
 
 </div>
 
-{{-- ================= IMAGE MODAL ================= --}}
-<div id="imageModal" onclick="this.style.display='none'">
-    <img id="modalImg">
-</div>
-
-{{-- ================= STYLES ================= --}}
+{{-- ================= STYLE ================= --}}
 <style>
 
 .post-card {
@@ -281,6 +229,18 @@
 
 .post-card:hover {
     transform: translateY(-3px);
+}
+
+.avatar {
+    width:40px;
+    height:40px;
+    border-radius:50%;
+    background:#6c757d;
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:bold;
 }
 
 .attachment-box {
@@ -300,35 +260,10 @@
 .clickable-img {
     cursor: pointer;
     max-height: 250px;
-}
-
-#imageModal {
-    display: none;
-    position: fixed;
-    top:0; left:0;
-    width:100%;
-    height:100%;
-    background: rgba(0,0,0,0.8);
-    justify-content:center;
-    align-items:center;
-}
-
-#imageModal img {
-    max-width: 90%;
-    max-height: 90%;
+    display:block;
+    margin-bottom: 10px;
 }
 
 </style>
-
-{{-- ================= SCRIPT ================= --}}
-<script>
-function openImage(src) {
-    let modal = document.getElementById('imageModal');
-    let img = document.getElementById('modalImg');
-
-    img.src = src;
-    modal.style.display = 'flex';
-}
-</script>
 
 @endsection

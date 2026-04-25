@@ -6,20 +6,20 @@ use Illuminate\Http\Request;
 use App\Models\Classroom;
 use App\Models\Assignment;
 use App\Models\Post;
+use App\Models\AssignmentAttachment;
 use Illuminate\Support\Facades\Storage;
 
 class AssignmentController extends Controller
 {
     /*
     |--------------------------------------------------------------------------
-    | SHOW CREATE FORM (TEACHER ONLY)
+    | CREATE FORM
     |--------------------------------------------------------------------------
     */
     public function create($id)
     {
         $classroom = Classroom::findOrFail($id);
 
-        // Only teacher can create
         if ($classroom->teacher_id !== auth()->id()) {
             abort(403);
         }
@@ -29,7 +29,7 @@ class AssignmentController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | STORE ASSIGNMENT (TEACHER)
+    | STORE ASSIGNMENT
     |--------------------------------------------------------------------------
     */
     public function store(Request $request)
@@ -38,163 +38,170 @@ class AssignmentController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'due_date' => 'nullable|date',
-            'file' => 'nullable|file|max:10240',
             'classroom_id' => 'required|exists:classrooms,id',
+            'files.*' => 'nullable|file|max:10240',
         ]);
 
         $classroom = Classroom::findOrFail($request->classroom_id);
 
-        // Security: only teacher can add assignment
         if ($classroom->teacher_id !== auth()->id()) {
             abort(403);
         }
 
-        // Upload file
-        $filePath = null;
-        if ($request->hasFile('file')) {
-            $filePath = $request->file('file')->store('assignments', 'public');
-        }
-
-        // Create assignment
+        // CREATE ASSIGNMENT
         $assignment = Assignment::create([
             'title' => $request->title,
             'description' => $request->description,
             'due_date' => $request->due_date,
-            'file' => $filePath,
             'classroom_id' => $classroom->id,
             'user_id' => auth()->id(),
         ]);
 
-        // 🚀 AUTO CREATE STREAM POST
+        // ================= MULTIPLE FILES =================
+        if ($request->hasFile('files')) {
+
+            foreach ($request->file('files') as $file) {
+
+                $path = $file->store('assignments', 'public');
+
+                AssignmentAttachment::create([
+                    'assignment_id' => $assignment->id,
+                    'file_path' => $path
+                ]);
+            }
+        }
+
+        // ================= STREAM POST =================
         Post::create([
             'description' => "📚 New Assignment: {$assignment->title}",
             'classroom_id' => $classroom->id,
             'user_id' => auth()->id(),
             'type' => 'assignment',
             'assignment_id' => $assignment->id
-            // optional if you added column:
-            // 'assignment_id' => $assignment->id,
         ]);
 
         return redirect()
             ->route('classrooms.classwork', $classroom->id)
-            ->with('success', 'Assignment created & posted to stream!');
+            ->with('success', 'Assignment created successfully!');
     }
 
     /*
     |--------------------------------------------------------------------------
-    | SHOW SINGLE ASSIGNMENT (TEACHER + STUDENT)
+    | SHOW ASSIGNMENT
     |--------------------------------------------------------------------------
     */
     public function show($id)
     {
         $assignment = Assignment::with([
             'submissions.user',
+            'attachments',
             'classroom'
         ])->findOrFail($id);
 
-        $classroom = $assignment->classroom;
-
-        // Optional security: only members can access
-        // (you can enhance later with pivot table check)
-
-        return view('assignments.show', compact('assignment', 'classroom'));
+        return view('assignments.show', [
+            'assignment' => $assignment,
+            'classroom' => $assignment->classroom
+        ]);
     }
 
     /*
     |--------------------------------------------------------------------------
-    | DELETE ASSIGNMENT (TEACHER ONLY)
+    | DELETE ASSIGNMENT
     |--------------------------------------------------------------------------
     */
-   public function destroy($id)
-{
-    $assignment = Assignment::findOrFail($id);
+    public function destroy($id)
+    {
+        $assignment = Assignment::with('attachments', 'submissions')->findOrFail($id);
 
-    // Only teacher can delete
-    if ($assignment->classroom->teacher_id !== auth()->id()) {
-        abort(403);
-    }
-
-    // 🗑 Delete assignment file
-    if ($assignment->file) {
-        \Storage::disk('public')->delete($assignment->file);
-    }
-
-    // 🗑 Delete submissions files
-    foreach ($assignment->submissions as $submission) {
-        if ($submission->file) {
-            \Storage::disk('public')->delete($submission->file);
-        }
-    }
-
-    $assignment->submissions()->delete();
-
-    // 🗑 DELETE RELATED POSTS (STREAM ANNOUNCEMENTS)
-    Post::where('classroom_id', $assignment->classroom_id)
-        ->where('description', 'like', "%{$assignment->title}%")
-        ->delete();
-
-    // 🗑 Delete assignment itself
-    $assignment->delete();
-
-    return redirect()
-        ->route('classrooms.classwork', $assignment->classroom_id)
-        ->with('success', 'Assignment deleted successfully');
-}
-
-public function edit($id)
-{
-    $assignment = Assignment::with('classroom')->findOrFail($id);
-
-    // only teacher can edit
-    if ($assignment->classroom->teacher_id !== auth()->id()) {
-        abort(403);
-    }
-
-    return view('assignments.edit', compact('assignment'));
-}
-
-
-public function update(Request $request, $id)
-{
-    $assignment = Assignment::with('classroom')->findOrFail($id);
-
-    if ($assignment->classroom->teacher_id !== auth()->id()) {
-        abort(403);
-    }
-
-    $request->validate([
-        'title' => 'required|string|max:255',
-        'description' => 'nullable|string',
-        'due_date' => 'nullable|date',
-        'file' => 'nullable|file|max:10240',
-    ]);
-
-    // HANDLE FILE UPDATE
-    if ($request->hasFile('file')) {
-
-        // delete old file if exists
-        if ($assignment->file) {
-            Storage::disk('public')->delete($assignment->file);
+        if ($assignment->classroom->teacher_id !== auth()->id()) {
+            abort(403);
         }
 
-        $filePath = $request->file('file')->store('assignments', 'public');
+        // delete attachments files
+        foreach ($assignment->attachments as $file) {
+            Storage::disk('public')->delete($file->file_path);
+        }
 
-        $assignment->file = $filePath;
+        $assignment->attachments()->delete();
+
+        // delete submissions files
+        foreach ($assignment->submissions as $submission) {
+            if ($submission->file) {
+                Storage::disk('public')->delete($submission->file);
+            }
+        }
+
+        $assignment->submissions()->delete();
+
+        // delete related posts
+        Post::where('assignment_id', $assignment->id)->delete();
+
+        $assignment->delete();
+
+        return redirect()
+            ->route('classrooms.classwork', $assignment->classroom_id)
+            ->with('success', 'Assignment deleted successfully');
     }
 
-    // UPDATE OTHER FIELDS
-    $assignment->title = $request->title;
-    $assignment->description = $request->description;
-    $assignment->due_date = $request->due_date;
+    /*
+    |--------------------------------------------------------------------------
+    | EDIT
+    |--------------------------------------------------------------------------
+    */
+    public function edit($id)
+    {
+        $assignment = Assignment::with(['classroom', 'attachments'])->findOrFail($id);
 
-    $assignment->save();
+        if ($assignment->classroom->teacher_id !== auth()->id()) {
+            abort(403);
+        }
 
-    return redirect()
-        ->route('classrooms.classwork', $assignment->classroom_id)
-        ->with('success', 'Assignment updated successfully');
-}
+        return view('assignments.edit', compact('assignment'));
+    }
 
+    /*
+    |--------------------------------------------------------------------------
+    | UPDATE
+    |--------------------------------------------------------------------------
+    */
+    public function update(Request $request, $id)
+    {
+        $assignment = Assignment::with('attachments')->findOrFail($id);
 
+        if ($assignment->classroom->teacher_id !== auth()->id()) {
+            abort(403);
+        }
 
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'due_date' => 'nullable|date',
+            'files.*' => 'nullable|file|max:10240',
+        ]);
+
+        // UPDATE BASIC INFO
+        $assignment->update([
+            'title' => $request->title,
+            'description' => $request->description,
+            'due_date' => $request->due_date,
+        ]);
+
+        // ================= ADD NEW FILES =================
+        if ($request->hasFile('files')) {
+
+            foreach ($request->file('files') as $file) {
+
+                $path = $file->store('assignments', 'public');
+
+                AssignmentAttachment::create([
+                    'assignment_id' => $assignment->id,
+                    'file_path' => $path
+                ]);
+            }
+        }
+
+        return redirect()
+            ->route('classrooms.classwork', $assignment->classroom_id)
+            ->with('success', 'Assignment updated successfully!');
+    }
 }

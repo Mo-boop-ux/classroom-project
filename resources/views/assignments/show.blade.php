@@ -17,7 +17,7 @@
 
             <div class="d-flex justify-content-between align-items-start">
 
-                {{-- LEFT SIDE --}}
+                {{-- LEFT --}}
                 <div>
 
                     <h3 class="fw-bold mb-1">
@@ -51,14 +51,13 @@
 
                 </div>
 
-                {{-- ================= 3 DOT MENU (TEACHER) ================= --}}
+                {{-- TEACHER MENU --}}
                 @if($assignment->classroom->teacher_id === auth()->id())
 
                     <div class="dropdown">
 
                         <button class="btn btn-light btn-sm dropdown-toggle"
-                                data-bs-toggle="dropdown"
-                                aria-expanded="false">
+                                data-bs-toggle="dropdown">
                             ⋮
                         </button>
 
@@ -96,27 +95,42 @@
 
             </div>
 
-            {{-- 📎 ATTACHMENT --}}
-            @if($assignment->file)
-                <div class="mt-3 p-2 border rounded bg-light">
+            {{-- ================= MULTIPLE ATTACHMENTS ================= --}}
+            @if($assignment->attachments->count())
 
-                    <div class="small text-muted mb-1">
-                        {{ basename($assignment->file) }}
+                <div class="mt-3">
+
+                    <label class="fw-semibold mb-2">Attachments</label>
+
+                    <div class="d-flex flex-column gap-2">
+
+                        @foreach($assignment->attachments as $file)
+
+                            <div class="border rounded p-2 bg-light d-flex justify-content-between align-items-center">
+
+                                <div class="small text-muted">
+                                    📎 {{ basename($file->file_path) }}
+                                </div>
+
+                                <a href="{{ asset('storage/' . $file->file_path) }}"
+                                   target="_blank"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Open
+                                </a>
+
+                            </div>
+
+                        @endforeach
+
                     </div>
 
-                    <a href="{{ asset('storage/' . $assignment->file) }}"
-                       target="_blank"
-                       class="btn btn-outline-primary btn-sm">
-                        📎 Open Attachment
-                    </a>
-
                 </div>
+
             @endif
 
         </div>
 
     </div>
-
 
     {{-- ================= TEACHER VIEW ================= --}}
     @if($assignment->classroom->teacher_id === auth()->id())
@@ -131,40 +145,22 @@
 
                     <div class="border rounded p-3 mb-2 bg-light">
 
-                        <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex justify-content-between">
 
-                            <strong>
-                                {{ $submission->user->name }}
-                            </strong>
+                            <strong>{{ $submission->user->name }}</strong>
 
-                            <div class="d-flex gap-2 align-items-center">
-
-                                @if($assignment->due_date && $submission->created_at > $assignment->due_date)
-                                    <span class="badge bg-warning text-dark">
-                                        Late
-                                    </span>
-                                @else
-                                    <span class="badge bg-success">
-                                        Submitted
-                                    </span>
-                                @endif
-
-                                <small class="text-muted">
-                                    {{ $submission->created_at->diffForHumans() }}
-                                </small>
-
-                            </div>
+                            <small class="text-muted">
+                                {{ $submission->created_at->diffForHumans() }}
+                            </small>
 
                         </div>
 
                         @if($submission->file)
-                            <div class="mt-2">
-                                <a href="{{ asset('storage/' . $submission->file) }}"
-                                   target="_blank"
-                                   class="btn btn-sm btn-outline-primary">
-                                    View File
-                                </a>
-                            </div>
+                            <a href="{{ asset('storage/' . $submission->file) }}"
+                               target="_blank"
+                               class="btn btn-sm btn-outline-primary mt-2">
+                                View File
+                            </a>
                         @endif
 
                     </div>
@@ -197,44 +193,27 @@
 
                 <h5 class="fw-bold mb-3">Your Work</h5>
 
-                {{-- SUBMITTED --}}
                 @if($mySubmission)
 
-                    <div class="alert alert-success d-flex justify-content-between align-items-center">
-
-                        <div>
-                            ✅ Submitted
-                        </div>
-
-                        @if($assignment->due_date && $mySubmission->created_at > $assignment->due_date)
-                            <span class="badge bg-warning text-dark">
-                                Late
-                            </span>
-                        @endif
-
+                    <div class="alert alert-success">
+                        ✅ Submitted
                     </div>
 
                     @if($mySubmission->file)
                         <a href="{{ asset('storage/' . $mySubmission->file) }}"
-                           target="_blank"
-                           class="btn btn-outline-primary btn-sm">
-                            View Your Submission
+                           class="btn btn-outline-primary btn-sm"
+                           target="_blank">
+                            View Submission
                         </a>
                     @endif
 
-                {{-- EXPIRED --}}
                 @elseif($isExpired)
 
                     <div class="alert alert-danger">
                         ⛔ Missing (Deadline passed)
                     </div>
 
-                {{-- NOT SUBMITTED --}}
                 @else
-
-                    <div class="alert alert-info">
-                        📌 Not submitted yet
-                    </div>
 
                     <form method="POST"
                           action="{{ route('submissions.store') }}"
@@ -256,7 +235,7 @@
                                   placeholder="Add a note (optional)"></textarea>
 
                         <button class="btn btn-success w-100">
-                            Submit Assignment
+                            Submit
                         </button>
 
                     </form>

@@ -4,37 +4,48 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Classroom;
+use App\Models\User;
+use App\Models\Submission;
+use App\Models\Post;
+use App\Models\AssignmentAttachment;
 
 class Assignment extends Model
 {
     protected $fillable = [
-    'title',
-    'description',
-    'due_date',
-    'file',
-    'classroom_id',
-    'user_id',
-];
+        'title',
+        'description',
+        'due_date',
+        'classroom_id',
+        'user_id',
+    ];
 
- public function classroom()
-{
-    return $this->belongsTo(Classroom::class);
-}
+    // ================= CLASSROOM =================
+    public function classroom()
+    {
+        return $this->belongsTo(Classroom::class);
+    }
 
-public function submissions()
-{
-    return $this->hasMany(Submission::class);
-}
+    // ================= TEACHER =================
+    public function teacher()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
-public function teacher()
-{
-    return $this->belongsTo(User::class, 'user_id');
-}
+    // ================= SUBMISSIONS =================
+    public function submissions()
+    {
+        return $this->hasMany(Submission::class);
+    }
 
-public function post()
-{
-    return $this->hasOne(Post::class);
-}
+    // ================= STREAM POST =================
+    public function post()
+    {
+        return $this->hasOne(Post::class);
+    }
 
-
+    // ================= MULTIPLE ATTACHMENTS (NEW SYSTEM) =================
+    public function attachments()
+    {
+        return $this->hasMany(AssignmentAttachment::class);
+    }
 }
