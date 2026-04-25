@@ -39,8 +39,7 @@ Route::middleware(['auth'])->group(function () {
     | DASHBOARD
     |--------------------------------------------------------------------------
     */
-    Route::get('/dashboard', [ClassroomController::class, 'dashboard'])
-        ->name('dashboard');
+    Route::get('/dashboard', [ClassroomController::class, 'dashboard'])->name('dashboard');
 
     /*
     |--------------------------------------------------------------------------
@@ -65,14 +64,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/classrooms/{id}/classwork', [ClassroomController::class, 'classwork'])->name('classrooms.classwork');
     Route::get('/classrooms/{id}/assignments', [ClassroomController::class, 'assignments'])->name('classrooms.assignments');
 
-    Route::delete('/assignments/{id}', [AssignmentController::class, 'destroy'])
-        ->name('assignments.destroy');
+    Route::delete('/assignments/{id}', [AssignmentController::class, 'destroy'])->name('assignments.destroy');
 
-    Route::get('/classrooms/{id}/people', [ClassroomController::class, 'people'])
-        ->name('classrooms.people');
+    Route::get('/classrooms/{id}/people', [ClassroomController::class, 'people'])->name('classrooms.people');
 
-    Route::delete('/classrooms/{classroom}/students/{student}', [ClassroomController::class, 'removeStudent'])
-        ->name('classrooms.removeStudent');
+    Route::delete('/classrooms/{classroom}/students/{student}', [ClassroomController::class, 'removeStudent'])->name('classrooms.removeStudent');
 
     /*
     |--------------------------------------------------------------------------
@@ -99,28 +95,22 @@ Route::middleware(['auth'])->group(function () {
     | ASSIGNMENTS
     |--------------------------------------------------------------------------
     */
-    Route::get('/classrooms/{id}/assignments/create', [AssignmentController::class, 'create'])
-        ->name('assignments.create');
+    Route::get('/classrooms/{id}/assignments/create', [AssignmentController::class, 'create'])->name('assignments.create');
 
-    Route::post('/assignments', [AssignmentController::class, 'store'])
-        ->name('assignments.store');
+    Route::post('/assignments', [AssignmentController::class, 'store'])->name('assignments.store');
 
-    Route::get('/assignments/{id}', [AssignmentController::class, 'show'])
-        ->name('assignments.show');
+    Route::get('/assignments/{id}', [AssignmentController::class, 'show'])->name('assignments.show');
 
-    Route::get('/assignments/{id}/edit', [AssignmentController::class, 'edit'])
-        ->name('assignments.edit');
+    Route::get('/assignments/{id}/edit', [AssignmentController::class, 'edit'])->name('assignments.edit');
 
-    Route::put('/assignments/{id}', [AssignmentController::class, 'update'])
-        ->name('assignments.update');
+    Route::put('/assignments/{id}', [AssignmentController::class, 'update'])->name('assignments.update');
 
     /*
     |--------------------------------------------------------------------------
     | SUBMISSIONS
     |--------------------------------------------------------------------------
     */
-    Route::post('/submissions', [SubmissionController::class, 'store'])
-        ->name('submissions.store');
+    Route::post('/submissions', [SubmissionController::class, 'store'])->name('submissions.store');
 
     /*
     |--------------------------------------------------------------------------
@@ -129,12 +119,10 @@ Route::middleware(['auth'])->group(function () {
     */
 
     // Post attachments
-    Route::delete('/attachments/{id}', [PostAttachmentController::class, 'destroy'])
-        ->name('attachments.destroy');
+    Route::delete('/attachments/{id}', [PostAttachmentController::class, 'destroy'])->name('attachments.destroy');
 
     // Assignment attachments (FIXED VERSION - NO MORE /{id} ONLY)
-    Route::delete('/assignment-attachments/{id}',
-    [AssignmentAttachmentController::class, 'destroy'])->name('assignment.attachments.destroy');
+    Route::delete('/assignment-attachments/{id}',[AssignmentAttachmentController::class, 'destroy'])->name('assignment.attachments.destroy');
 
     /*
     |--------------------------------------------------------------------------
