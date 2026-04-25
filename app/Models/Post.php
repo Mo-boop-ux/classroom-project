@@ -14,7 +14,9 @@ protected $fillable = [
     'description',
     'classroom_id',
     'user_id',
-    'file'
+    'file' ,
+    'type',
+    'assignment_id'
 ];
 public function classroom()
 {
@@ -30,4 +32,11 @@ public function comments()
 {
     return $this->hasMany(Comment::class);
 }
+
+public function assignment()
+{
+    return $this->belongsTo(Assignment::class);
+}
+
+
 }

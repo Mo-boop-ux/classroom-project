@@ -31,6 +31,7 @@ class PostController extends Controller
             'classroom_id' => $request->classroom_id,
             'user_id' => auth()->id(),
             'file' => $filePath,
+            'type' => 'post'
         ]);
 
         $classroom = Classroom::with('students')

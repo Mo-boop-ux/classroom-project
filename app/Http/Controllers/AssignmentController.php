@@ -70,6 +70,8 @@ class AssignmentController extends Controller
             'description' => "📚 New Assignment: {$assignment->title}",
             'classroom_id' => $classroom->id,
             'user_id' => auth()->id(),
+            'type' => 'assignment',
+            'assignment_id' => $assignment->id
             // optional if you added column:
             // 'assignment_id' => $assignment->id,
         ]);

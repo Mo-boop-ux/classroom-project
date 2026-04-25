@@ -219,4 +219,21 @@ public function destroy($id)
         ->with('success', 'Classroom deleted successfully');
 }
 
+
+public function removeStudent($classroomId, $studentId)
+{
+    $classroom = Classroom::findOrFail($classroomId);
+
+    // only teacher can remove
+    if ($classroom->teacher_id !== auth()->id()) {
+        abort(403);
+    }
+
+    // detach student
+    $classroom->students()->detach($studentId);
+
+    return back()->with('success', 'Student removed successfully');
+}
+
+
 }

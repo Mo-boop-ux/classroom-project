@@ -54,7 +54,9 @@
                     </li>
 
                     <li class="nav-item">
-                          <a class="nav-link" href="{{ route('dashboard') }}">📊 Dashboard</a>
+                        <a class="nav-link" href="{{ route('dashboard') }}">
+                            📊 Dashboard
+                        </a>
                     </li>
 
                     <li class="nav-item mt-2">
@@ -70,46 +72,63 @@
 
                 <hr>
 
-                {{-- CREATED CLASSES --}}
-                <h6 class="text-muted">Created Classes</h6>
+                {{-- ================= CREATED CLASSES (DROPDOWN) ================= --}}
+                <button class="dropdown-toggle-btn w-100 text-start"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#createdClasses">
 
-                @forelse($created ?? [] as $classroom)
+                    Created Classes
+                </button>
 
-                    <a class="d-block text-decoration-none p-2 rounded hover-bg"
-                       href="{{ route('classrooms.show', $classroom->id) }}">
+                <div class="collapse mt-2" id="createdClasses">
 
-                        {{ $classroom->name }}
+                    @forelse($created ?? [] as $classroom)
 
-                        {{-- ONLY OWNER CAN SEE CODE --}}
-                        @if($classroom->teacher_id === auth()->id())
-                            <small class="text-muted d-block">
-                                Code: {{ $classroom->code }}
-                            </small>
-                        @endif
+                        <a class="d-block text-decoration-none p-2 rounded hover-bg"
+                           href="{{ route('classrooms.show', $classroom->id) }}">
 
-                    </a>
+                            {{ $classroom->name }}
 
-                @empty
-                    <small class="text-muted">No created classes</small>
-                @endforelse
+                            @if($classroom->teacher_id === auth()->id())
+                                <small class="text-muted d-block">
+                                    Code: {{ $classroom->code }}
+                                </small>
+                            @endif
+
+                        </a>
+
+                    @empty
+                        <small class="text-muted">No created classes</small>
+                    @endforelse
+
+                </div>
 
                 <hr>
 
-                {{-- JOINED CLASSES --}}
-                <h6 class="text-muted">Joined Classes</h6>
+                {{-- ================= JOINED CLASSES (DROPDOWN) ================= --}}
+                <button class="dropdown-toggle-btn w-100 text-start"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#joinedClasses">
 
-                @forelse($joined ?? [] as $classroom)
+                    Joined Classes
+                </button>
 
-                    <a class="d-block text-decoration-none p-2 rounded hover-bg"
-                       href="{{ route('classrooms.show', $classroom->id) }}">
+                <div class="collapse mt-2" id="joinedClasses">
 
-                        {{ $classroom->name }}
+                    @forelse($joined ?? [] as $classroom)
 
-                    </a>
+                        <a class="d-block text-decoration-none p-2 rounded hover-bg"
+                           href="{{ route('classrooms.show', $classroom->id) }}">
 
-                @empty
-                    <small class="text-muted">No joined classes</small>
-                @endforelse
+                            {{ $classroom->name }}
+
+                        </a>
+
+                    @empty
+                        <small class="text-muted">No joined classes</small>
+                    @endforelse
+
+                </div>
 
             </div>
         </div>
@@ -122,11 +141,35 @@
     @yield('content')
 </div>
 
-{{-- HOVER STYLE --}}
+{{-- STYLES --}}
 <style>
+
 .hover-bg:hover {
     background: #f1f1f1;
 }
+
+/* Dropdown button style */
+.dropdown-toggle-btn {
+    border: none;
+    background: none;
+    font-weight: 600;
+    padding: 8px 0;
+    position: relative;
+}
+
+/* Arrow */
+.dropdown-toggle-btn::after {
+    content: "▼";
+    position: absolute;
+    right: 0;
+    transition: 0.3s;
+}
+
+/* Rotate arrow when open */
+.dropdown-toggle-btn[aria-expanded="true"]::after {
+    transform: rotate(180deg);
+}
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

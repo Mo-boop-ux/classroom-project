@@ -89,6 +89,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/classrooms/{id}/people', [ClassroomController::class, 'people'])
         ->name('classrooms.people');
 
+    Route::delete('/classrooms/{classroom}/students/{student}', [ClassroomController::class, 'removeStudent'])
+    ->name('classrooms.removeStudent');
+
     /*
     |--------------------------------------------------------------------------
     | POSTS

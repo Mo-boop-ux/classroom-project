@@ -18,28 +18,26 @@
 
                 <input type="hidden" name="classroom_id" value="{{ $classroom->id }}">
 
-                {{-- ERROR --}}
                 @error('description')
                     <div class="text-danger mb-2">{{ $message }}</div>
                 @enderror
 
                 <textarea name="description"
                           class="form-control mb-2"
-                          placeholder="Write an announcement..."
+                          placeholder="Share something with your class..."
                           required>{{ old('description') }}</textarea>
 
-                {{-- FILE INPUT --}}
-                <input type="file"
-                       name="file"
-                       class="form-control mb-2">
+                <div class="d-flex gap-2 align-items-center">
+                    <input type="file" name="file" class="form-control">
+
+                    <button class="btn btn-primary">
+                        Post
+                    </button>
+                </div>
 
                 @error('file')
-                    <div class="text-danger mb-2">{{ $message }}</div>
+                    <div class="text-danger mt-2">{{ $message }}</div>
                 @enderror
-
-                <button class="btn btn-primary w-100">
-                    Post
-                </button>
 
             </form>
 
@@ -47,49 +45,91 @@
 
     </div>
 
+
     {{-- ================= POSTS ================= --}}
     @forelse($posts as $post)
 
-        <div class="card shadow-sm mb-3 border-0">
+        @php
+            $isAssignment = !empty($post->assignment_id);
+            $openLink = $isAssignment
+                ? route('assignments.show', $post->assignment_id)
+                : null;
+        @endphp
+
+        <div class="card shadow-sm mb-3 border-0 post-card position-relative">
+
+            {{-- 🔥 CLICKABLE OVERLAY ONLY FOR ASSIGNMENTS --}}
+            @if($isAssignment)
+                <a href="{{ $openLink }}" class="stretched-link"></a>
+            @endif
 
             <div class="card-body">
 
                 {{-- HEADER --}}
                 <div class="d-flex justify-content-between align-items-start mb-2">
 
-                    <div>
-                        <strong>{{ $post->user->name ?? 'Unknown' }}</strong>
+                    <div class="d-flex align-items-center gap-2">
 
-                        <small class="text-muted d-block">
-                            {{ $post->created_at->diffForHumans() }}
-                        </small>
+                        <div class="rounded-circle bg-secondary text-white d-flex justify-content-center align-items-center"
+                             style="width:40px;height:40px;">
+                            {{ strtoupper($post->user->name[0] ?? 'U') }}
+                        </div>
+
+                        <div>
+                            <strong>{{ $post->user->name ?? 'Unknown' }}</strong>
+
+                            <small class="text-muted d-block">
+                                {{ $post->created_at->diffForHumans() }}
+                            </small>
+
+                            {{-- LABEL --}}
+                            @if($isAssignment)
+                                <small class="text-primary fw-bold">
+                                    📚 Assignment
+                                </small>
+                            @endif
+                        </div>
+
                     </div>
 
-                    {{-- ACTIONS --}}
+                    {{-- 3 DOT MENU --}}
                     @if(
                         $post->user_id === auth()->id() ||
                         $post->classroom->teacher_id === auth()->id()
                     )
 
-                        <div class="d-flex gap-2">
+                        <div class="dropdown position-relative" style="z-index: 9999;">
 
-                            <a href="{{ route('posts.edit', $post->id) }}"
-                               class="btn btn-sm btn-warning">
-                                Edit
-                            </a>
+                            <button class="btn btn-sm btn-light"
+                                    data-bs-toggle="dropdown">
+                                ⋮
+                            </button>
 
-                            <form method="POST"
-                                  action="{{ route('posts.destroy', $post->id) }}"
-                                  onsubmit="return confirm('Delete this post?')">
+                            <ul class="dropdown-menu dropdown-menu-end">
 
-                                @csrf
-                                @method('DELETE')
+                                <li>
+                                    <a class="dropdown-item"
+                                       href="{{ route('posts.edit', $post->id) }}">
+                                        ✏️ Edit
+                                    </a>
+                                </li>
 
-                                <button class="btn btn-sm btn-danger">
-                                    Delete
-                                </button>
+                                <li>
+                                    <form method="POST"
+                                          action="{{ route('posts.destroy', $post->id) }}"
+                                          onsubmit="return confirm('Delete this post?')">
 
-                            </form>
+                                        @csrf
+                                        @method('DELETE')
+
+                                        <button class="dropdown-item text-danger">
+                                            🗑 Delete
+                                        </button>
+
+                                    </form>
+                                </li>
+
+                            </ul>
 
                         </div>
 
@@ -98,127 +138,120 @@
                 </div>
 
                 {{-- CONTENT --}}
-                <p class="mb-2">
-                    {{ $post->description }}
-                </p>
+                <p class="mb-2">{{ $post->description }}</p>
 
                 {{-- ================= ATTACHMENT ================= --}}
                 @if($post->file)
 
-                    <div class="mb-3 p-2 border rounded bg-light">
+                    <div class="attachment-box">
 
-                        {{-- FILE NAME --}}
-                        <div class="small text-muted mb-1">
-                            {{ basename($post->file) }}
-                        </div>
-
-                        {{-- IMAGE PREVIEW --}}
                         @if(Str::endsWith(strtolower($post->file), ['jpg','jpeg','png','gif','webp']))
                             <img src="{{ asset('storage/' . $post->file) }}"
-                                 class="img-fluid rounded mb-2"
-                                 style="max-height: 250px;">
+                                 class="img-fluid rounded mb-2 clickable-img"
+                                 onclick="openImage(this.src)">
                         @endif
 
-                        {{-- BUTTON --}}
-                        <a href="{{ asset('storage/' . $post->file) }}"
-                           target="_blank"
-                           class="btn btn-sm btn-outline-primary">
-                            📎 Open File
-                        </a>
+                        <div class="d-flex justify-content-between align-items-center">
+
+                            <small class="text-muted">
+                                {{ basename($post->file) }}
+                            </small>
+
+                            <a href="{{ asset('storage/' . $post->file) }}"
+                               target="_blank"
+                               class="btn btn-sm btn-outline-primary">
+                                Open
+                            </a>
+
+                        </div>
 
                     </div>
 
                 @endif
 
-                <hr>
-
                 {{-- ================= COMMENTS ================= --}}
-                <div class="mb-3">
+                <div class="mt-3">
 
-                    @forelse($post->comments as $comment)
+                    <button class="btn btn-sm btn-light mb-2"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#comments-{{ $post->id }}">
+                        💬 Comments ({{ $post->comments->count() }})
+                    </button>
 
-                        <div class="border rounded p-2 mb-2 bg-light">
+                    <div class="collapse" id="comments-{{ $post->id }}">
 
-                            <div class="d-flex justify-content-between">
+                        @forelse($post->comments as $comment)
 
-                                <strong>
-                                    {{ $comment->user->name ?? 'User' }}
-                                </strong>
+                            <div class="comment-box">
 
-                                <div class="d-flex align-items-center gap-2">
+                                <div class="d-flex justify-content-between">
 
-                                    <small class="text-muted">
-                                        {{ $comment->created_at->diffForHumans() }}
-                                    </small>
+                                    <strong>{{ $comment->user->name ?? 'User' }}</strong>
 
-                                    @if(
-                                        $comment->user_id === auth()->id() ||
-                                        $post->classroom->teacher_id === auth()->id()
-                                    )
+                                    <div class="d-flex gap-2">
 
-                                        <div class="d-flex gap-1">
+                                        <small class="text-muted">
+                                            {{ $comment->created_at->diffForHumans() }}
+                                        </small>
+
+                                        @if(
+                                            $comment->user_id === auth()->id() ||
+                                            $post->classroom->teacher_id === auth()->id()
+                                        )
 
                                             <a href="{{ route('comments.edit', $comment->id) }}"
-                                               class="btn btn-sm btn-warning">
-                                                Edit
-                                            </a>
+                                               class="text-warning small">Edit</a>
 
                                             <form method="POST"
-                                                  action="{{ route('comments.destroy', $comment->id) }}"
-                                                  onsubmit="return confirm('Delete this comment?')">
+                                                  action="{{ route('comments.destroy', $comment->id) }}">
 
                                                 @csrf
                                                 @method('DELETE')
 
-                                                <button class="btn btn-sm btn-danger">
-                                                    🗑
+                                                <button class="text-danger border-0 bg-transparent small">
+                                                    Delete
                                                 </button>
 
                                             </form>
 
-                                        </div>
+                                        @endif
 
-                                    @endif
+                                    </div>
 
+                                </div>
+
+                                <div class="mt-1">
+                                    {{ $comment->description }}
                                 </div>
 
                             </div>
 
-                            <div class="mt-1">
-                                {{ $comment->description }}
+                        @empty
+                            <small class="text-muted">No comments yet</small>
+                        @endforelse
+
+                        {{-- ADD COMMENT --}}
+                        <form method="POST" action="{{ route('comments.store') }}" class="mt-2">
+                            @csrf
+
+                            <input type="hidden" name="post_id" value="{{ $post->id }}">
+
+                            <div class="input-group">
+                                <input type="text"
+                                       name="description"
+                                       class="form-control"
+                                       placeholder="Write a comment..."
+                                       required>
+
+                                <button class="btn btn-outline-primary">
+                                    Send
+                                </button>
                             </div>
-
-                        </div>
-
-                    @empty
-
-                        <small class="text-muted">No comments yet</small>
-
-                    @endforelse
-
-                </div>
-
-                {{-- ================= ADD COMMENT ================= --}}
-                <form method="POST" action="{{ route('comments.store') }}">
-                    @csrf
-
-                    <input type="hidden" name="post_id" value="{{ $post->id }}">
-
-                    <div class="input-group">
-
-                        <input type="text"
-                               name="description"
-                               class="form-control"
-                               placeholder="Write a comment..."
-                               required>
-
-                        <button class="btn btn-outline-primary">
-                            Comment
-                        </button>
+                        </form>
 
                     </div>
 
-                </form>
+                </div>
 
             </div>
 
@@ -233,5 +266,69 @@
     @endforelse
 
 </div>
+
+{{-- ================= IMAGE MODAL ================= --}}
+<div id="imageModal" onclick="this.style.display='none'">
+    <img id="modalImg">
+</div>
+
+{{-- ================= STYLES ================= --}}
+<style>
+
+.post-card {
+    transition: 0.2s ease;
+}
+
+.post-card:hover {
+    transform: translateY(-3px);
+}
+
+.attachment-box {
+    border: 1px solid #eee;
+    padding: 10px;
+    border-radius: 8px;
+    background: #fafafa;
+}
+
+.comment-box {
+    background: #f5f5f5;
+    padding: 8px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+}
+
+.clickable-img {
+    cursor: pointer;
+    max-height: 250px;
+}
+
+#imageModal {
+    display: none;
+    position: fixed;
+    top:0; left:0;
+    width:100%;
+    height:100%;
+    background: rgba(0,0,0,0.8);
+    justify-content:center;
+    align-items:center;
+}
+
+#imageModal img {
+    max-width: 90%;
+    max-height: 90%;
+}
+
+</style>
+
+{{-- ================= SCRIPT ================= --}}
+<script>
+function openImage(src) {
+    let modal = document.getElementById('imageModal');
+    let img = document.getElementById('modalImg');
+
+    img.src = src;
+    modal.style.display = 'flex';
+}
+</script>
 
 @endsection
