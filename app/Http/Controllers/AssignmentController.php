@@ -8,6 +8,9 @@ use App\Models\Assignment;
 use App\Models\Post;
 use App\Models\AssignmentAttachment;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\NewPostMail;
+
 
 class AssignmentController extends Controller
 {
@@ -72,13 +75,25 @@ class AssignmentController extends Controller
         }
 
         // ================= STREAM POST =================
-        Post::create([
+        $post = Post::create([
             'description' => "📚 New Assignment: {$assignment->title}",
             'classroom_id' => $classroom->id,
             'user_id' => auth()->id(),
             'type' => 'assignment',
             'assignment_id' => $assignment->id
         ]);
+
+        $classroom = Classroom::with('students')
+            ->findOrFail($request->classroom_id);
+
+        $recipients = $classroom->students
+            ->where('id', '!=', auth()->id());
+
+        foreach ($recipients as $student) {
+            Mail::to($student->email)->queue(
+                new NewPostMail($post, $classroom)
+            );
+        }
 
         return redirect()
             ->route('classrooms.classwork', $classroom->id)

@@ -46,7 +46,7 @@
             $isAssignment = !empty($post->assignment_id);
         @endphp
 
-        <div class="card shadow-sm mb-3 border-0 post-card position-relative overflow-hidden">
+        <div class="card shadow-sm mb-3 border-0 post-card">
 
             {{-- CLICK ONLY IF ASSIGNMENT --}}
             @if($isAssignment)
@@ -90,14 +90,10 @@
                         $post->classroom->teacher_id === auth()->id()
                     )
 
-                        <div class="dropdown position-relative"
-                             style="z-index: 9999;">
-
-                            <button class="btn btn-light btn-sm"
-                                    data-bs-toggle="dropdown">
-                                ⋮
-                            </button>
-
+        <div class="dropdown position-relative" style="z-index: 10;">
+            <button class="btn btn-light btn-sm dropdown-toggle"data-bs-toggle="dropdown"data-bs-display="static">
+             ⋮
+            </button>
                             <ul class="dropdown-menu dropdown-menu-end shadow">
 
                                 <li>
@@ -262,6 +258,15 @@
     max-height: 250px;
     display:block;
     margin-bottom: 10px;
+}
+
+.post-card .dropdown {
+    position: relative;
+    z-index: 20;
+}
+
+.post-card .stretched-link {
+    z-index: 1;
 }
 
 </style>
