@@ -76,7 +76,7 @@
 
                             @if($isAssignment)
                                 <small class="text-primary fw-bold">
-                                    📚 Assignment
+                                    Assignment
                                 </small>
                             @endif
 
@@ -99,19 +99,19 @@
                                 <li>
                                     <a class="dropdown-item"
                                        href="{{ route('posts.edit', $post->id) }}">
-                                        ✏️ Edit
+                                        Edit
                                     </a>
                                 </li>
 
                                 <li>
                                     <form method="POST"
                                           action="{{ route('posts.destroy', $post->id) }}"
-                                          onsubmit="return confirm('Delete this post?')">
+                                          onsubmit="return confirmDeletePost(event)">
                                         @csrf
                                         @method('DELETE')
 
                                         <button class="dropdown-item text-danger">
-                                            🗑 Delete
+                                            Delete
                                         </button>
                                     </form>
                                 </li>
@@ -165,56 +165,199 @@
 
                 @endif
 
-                {{-- ================= COMMENTS ================= --}}
+               {{-- ================= COMMENTS ONLY FOR POSTS ================= --}}
+                @if(!$isAssignment)
+
                 <div class="mt-3">
 
-                    <button class="btn btn-sm btn-light mb-2"
-                            data-bs-toggle="collapse"
-                            data-bs-target="#comments-{{ $post->id }}">
+                    {{-- LINK NOT BUTTON --}}
+                    <a href="#"
+                       class="text-decoration-none"
+                       data-bs-toggle="collapse"
+                       data-bs-target="#comments-{{ $post->id }}">
                         💬 Comments ({{ $post->comments->count() }})
-                    </button>
+                    </a>
 
-                    <div class="collapse" id="comments-{{ $post->id }}">
+                    <div class="collapse mt-2" id="comments-{{ $post->id }}">
 
+                        {{-- COMMENTS LIST --}}
                         @forelse($post->comments as $comment)
 
-                            <div class="comment-box">
+                        <div class="comment-box d-flex justify-content-between">
+
+                            <div class="w-100">
 
                                 <div class="d-flex justify-content-between">
-
                                     <strong>{{ $comment->user->name }}</strong>
 
                                     <small class="text-muted">
                                         {{ $comment->created_at->diffForHumans() }}
                                     </small>
-
                                 </div>
 
-                                <div>{{ $comment->description }}</div>
+                                {{-- TEXT --}}
+                                <div id="text-{{ $comment->id }}">
+                                    {{ $comment->description }}
+                                </div>
+
+                                {{-- EDIT --}}
+                                <form method="POST"
+                                      action="{{ route('comments.update', $comment->id) }}"
+                                      class="d-none mt-2"
+                                      id="form-{{ $comment->id }}">
+                                    @csrf
+                                    @method('PUT')
+
+                                    <div class="d-flex gap-2">
+                                        <input type="text"
+                                               name="description"
+                                               value="{{ $comment->description }}"
+                                               class="form-control">
+
+                                        <button class="btn btn-success btn-sm">Save</button>
+                                        <button type="button"
+                                                class="btn btn-secondary btn-sm"
+                                                onclick="cancelEdit({{ $comment->id }})">
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </form>
 
                             </div>
 
+                            {{-- COMMENT 3 DOTS --}}
+                            @if(
+                                $comment->user_id === auth()->id() ||
+                                $post->classroom->teacher_id === auth()->id()
+                            )
+                            <div class="dropdown ms-2">
+                                <button class="btn btn-light btn-sm"
+                                        data-bs-toggle="dropdown">
+                                    ⋮
+                                </button>
+
+                                <ul class="dropdown-menu dropdown-menu-end">
+
+                                    <li>
+                                        <button class="dropdown-item"
+                                                onclick="editComment({{ $comment->id }})">
+                                            Edit
+                                        </button>
+                                    </li>
+
+                                    <li>
+                                        <form method="POST"
+                                              action="{{ route('comments.destroy', $comment->id) }}"
+                                              onsubmit="return confirmDeleteComment(event)">
+                                            @csrf
+                                            @method('DELETE')
+
+                                            <button class="dropdown-item text-danger">
+                                                Delete
+                                            </button>
+                                        </form>
+                                    </li>
+
+                                </ul>
+                            </div>
+                            @endif
+
+                        </div>
+
                         @empty
-                            <small class="text-muted">No comments yet</small>
+                            <small>No comments yet</small>
                         @endforelse
+
+                        {{-- ADD COMMENT --}}
+                        <form method="POST"
+                              action="{{ route('comments.store') }}"
+                              class="mt-2">
+                            @csrf
+
+                            <input type="hidden" name="post_id" value="{{ $post->id }}">
+
+                            <div class="d-flex gap-2">
+                                <input type="text"
+                                       name="description"
+                                       class="form-control"
+                                       placeholder="Write comment...">
+
+                                <button class="btn btn-primary btn-sm">
+                                    Send
+                                </button>
+                            </div>
+
+                        </form>
 
                     </div>
 
                 </div>
+
+                @endif
 
             </div>
 
         </div>
 
     @empty
-
         <div class="text-center text-muted mt-5">
-            No posts yet in this classroom
+            No posts yet
         </div>
-
     @endforelse
 
 </div>
+
+{{-- ================= JS ================= --}}
+<script>
+function editComment(id){
+    document.getElementById('text-'+id).classList.add('d-none');
+    document.getElementById('form-'+id).classList.remove('d-none');
+}
+
+function cancelEdit(id){
+    document.getElementById('text-'+id).classList.remove('d-none');
+    document.getElementById('form-'+id).classList.add('d-none');
+}
+
+function confirmDeletePost(e){
+    e.preventDefault();
+
+    Swal.fire({
+        title: 'Delete post?',
+        text: "This action cannot be undone!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            e.target.submit();
+        }
+    });
+
+    return false;
+}
+
+function confirmDeleteComment(e){
+    e.preventDefault();
+
+    Swal.fire({
+        title: 'Delete comment?',
+        text: "This action cannot be undone!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            e.target.submit();
+        }
+    });
+
+    return false;
+}
+
+</script>
 
 {{-- ================= STYLE ================= --}}
 <style>

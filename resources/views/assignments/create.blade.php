@@ -5,7 +5,7 @@
 <div class="container">
 
     {{-- HEADER --}}
-    <h3 class="fw-bold mb-3">📚 Create Assignment</h3>
+    <h3 class="fw-bold mb-3">Create Assignment</h3>
 
     <div class="card shadow-sm border-0">
         <div class="card-body">
@@ -64,7 +64,7 @@
 
                 {{-- SUBMIT --}}
                 <button class="btn btn-primary w-100">
-                    ➕ Create Assignment
+                    Create
                 </button>
 
             </form>

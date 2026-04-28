@@ -33,10 +33,14 @@
             <div class="offcanvas-body">
 
                 {{-- USER INFO --}}
-                <div class="mb-3 p-2 border rounded bg-light">
-                    <strong>{{ auth()->user()->name }}</strong><br>
-                    <small class="text-muted">{{ auth()->user()->email }}</small>
+             <a href="{{ route('profile.edit') }}" class="text-decoration-none text-dark">
+                <div class="mb-3 p-2 border rounded bg-light hover-profile">
+                   <strong>{{ auth()->user()->name }}</strong><br>
+                   <small class="text-muted">
+                    {{ auth()->user()->email }}
+                    </small>
                 </div>
+            </a>
 
                 {{-- NAV --}}
                 <ul class="navbar-nav mb-3">
@@ -170,10 +174,19 @@
     transform: rotate(180deg);
 }
 
+.hover-profile {
+    transition: 0.2s;
+    cursor: pointer;
+}
+
+.hover-profile:hover {
+    background: #e9ecef;
+    transform: translateY(-2px);
+}
 
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </body>
 </html>

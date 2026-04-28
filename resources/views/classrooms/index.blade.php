@@ -97,7 +97,8 @@
 
                                         <li>
                                             <form method="POST"
-                                                  action="{{ route('classrooms.destroy', $classroom->id) }}">
+                                                  action="{{ route('classrooms.destroy', $classroom->id) }}"
+                                                  onsubmit="return confirmDelete(event)">
                                                 @csrf
                                                 @method('DELETE')
 
@@ -111,7 +112,8 @@
 
                                         <li>
                                             <form method="POST"
-                                                  action="{{ route('classrooms.leave', $classroom->id) }}">
+                                                  action="{{ route('classrooms.leave', $classroom->id) }}"
+                                                  onsubmit="return confirmLeave(event)">
                                                 @csrf
 
                                                 <button class="dropdown-item text-danger">
@@ -145,6 +147,45 @@
     </div>
 
 </div>
+
+<script>
+function confirmDelete(e){
+    e.preventDefault();
+
+    Swal.fire({
+        title: 'Delete classroom?',
+        text: "This action cannot be undone!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            e.target.submit();
+        }
+    });
+
+    return false;
+}
+
+function confirmLeave(e){
+    e.preventDefault();
+
+    Swal.fire({
+        title: 'Leave classroom?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Yes, leave'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            e.target.submit();
+        }
+    });
+
+    return false;
+}
+</script>
 
 {{-- HOVER EFFECT --}}
 <style>

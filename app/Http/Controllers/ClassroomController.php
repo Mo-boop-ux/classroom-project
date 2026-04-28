@@ -136,8 +136,22 @@ public function joinByLink($code)
 
 public function dashboard()
 {
-    $classes = Classroom::where('teacher_id', auth()->id())->with('assignments.submissions')->get();
-    return view('dashboard', compact('classes'));
+    $classes = Classroom::where('teacher_id', auth()->id())
+        ->with([
+            'assignments.submissions.user',
+            'students'
+        ])
+        ->get();
+
+    $upcomingAssignments = collect();
+
+    foreach ($classes as $class) {
+        $upcomingAssignments = $upcomingAssignments->merge(
+            $class->assignments->where('due_date', '>=', now())
+        );
+    }
+
+    return view('dashboard', compact('classes', 'upcomingAssignments'));
 }
 
 

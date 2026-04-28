@@ -75,7 +75,7 @@
                             <li>
                                 <form method="POST"
                                       action="{{ route('assignments.destroy', $assignment->id) }}"
-                                      onsubmit="return confirm('Delete this assignment?')">
+                                      onsubmit="return confirmDelete(event)"">
 
                                     @csrf
                                     @method('DELETE')
@@ -251,3 +251,25 @@
 </div>
 
 @endsection
+
+
+<script>
+function confirmDelete(e){
+    e.preventDefault();
+
+    Swal.fire({
+        title: 'Delete assignment?',
+        text: "This action cannot be undone!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            e.target.submit();
+        }
+    });
+
+    return false;
+}
+</script>

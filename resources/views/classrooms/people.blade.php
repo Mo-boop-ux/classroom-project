@@ -63,7 +63,7 @@
 
                     <form method="POST"
                           action="{{ route('classrooms.removeStudent', [$classroom->id, $student->id]) }}"
-                          onsubmit="return confirm('Remove this student?')">
+                         onsubmit="return confirmDelete(event)">
 
                         @csrf
                         @method('DELETE')
@@ -91,3 +91,23 @@
 </div>
 
 @endsection
+<script>
+function confirmDelete(e){
+    e.preventDefault();
+
+    Swal.fire({
+        title: 'Remove student?',
+        text: "This action cannot be undone!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            e.target.submit();
+        }
+    });
+
+    return false;
+}
+</script>
