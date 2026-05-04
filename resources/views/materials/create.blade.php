@@ -8,14 +8,15 @@
     <div class="mb-4">
 
         <h3 class="fw-bold">
-            📝 Create Assignment
+            📄 Create Material
         </h3>
 
         <p class="text-muted mb-0">
-            Assign work to students with instructions, due date, and attachments
+            Share files, notes, links, and learning resources with students
         </p>
 
     </div>
+
 
     {{-- ================= MAIN CARD ================= --}}
     <div class="card shadow-sm border-0">
@@ -23,7 +24,7 @@
         <div class="card-body p-4">
 
             <form method="POST"
-                  action="{{ route('assignments.store') }}"
+                  action="{{ route('materials.store') }}"
                   enctype="multipart/form-data">
 
                 @csrf
@@ -33,8 +34,9 @@
                        name="classroom_id"
                        value="{{ $classroom->id }}">
 
-                {{-- ================= SUBJECT ================= --}}
-                @if($classroom->subjects->count())
+
+                {{-- SUBJECT (SAFE CHECK) --}}
+                @if(isset($classroom->subjects) && $classroom->subjects->count())
 
                     <div class="mb-3">
 
@@ -72,6 +74,7 @@
 
                 @endif
 
+
                 {{-- TITLE --}}
                 <div class="mb-3">
 
@@ -82,7 +85,7 @@
                     <input type="text"
                            name="title"
                            class="form-control"
-                           placeholder="Assignment title"
+                           placeholder="Material title"
                            value="{{ old('title') }}"
                            required>
 
@@ -94,17 +97,18 @@
 
                 </div>
 
-                {{-- INSTRUCTIONS --}}
+
+                {{-- DESCRIPTION --}}
                 <div class="mb-3">
 
                     <label class="form-label fw-semibold">
-                        Instructions
+                        Description
                     </label>
 
                     <textarea name="description"
                               class="form-control"
                               rows="4"
-                              placeholder="Write instructions for students">{{ old('description') }}</textarea>
+                              placeholder="Write instructions or notes for students">{{ old('description') }}</textarea>
 
                     @error('description')
                         <small class="text-danger">
@@ -114,25 +118,32 @@
 
                 </div>
 
-                {{-- DUE DATE --}}
+
+                {{-- LINK --}}
                 <div class="mb-3">
 
                     <label class="form-label fw-semibold">
-                        Due Date
+                        Link (optional)
                     </label>
 
-                    <input type="date"
-                           name="due_date"
+                    <input type="url"
+                           name="link"
                            class="form-control"
-                           value="{{ old('due_date') }}">
+                           placeholder="https://example.com"
+                           value="{{ old('link') }}">
 
-                    @error('due_date')
+                    <small class="text-muted">
+                        YouTube, Google Docs, websites, or references
+                    </small>
+
+                    @error('link')
                         <small class="text-danger">
                             {{ $message }}
                         </small>
                     @enderror
 
                 </div>
+
 
                 {{-- ATTACHMENTS --}}
                 <div class="mb-4">
@@ -147,7 +158,7 @@
                            multiple>
 
                     <small class="text-muted">
-                        Upload PDFs, images, documents, or resources
+                        Upload PDFs, images, PowerPoints, ZIPs, or study files
                     </small>
 
                     @error('files.*')
@@ -158,10 +169,10 @@
 
                 </div>
 
-                {{-- BUTTONS --}}
+
+                {{-- ACTIONS --}}
                 <div class="d-flex gap-2">
 
-                    {{-- CANCEL --}}
                     <a href="{{ route('classrooms.classwork', $classroom->id) }}"
                        class="btn btn-outline-secondary w-50">
 
@@ -169,10 +180,9 @@
 
                     </a>
 
-                    {{-- SUBMIT --}}
                     <button class="btn btn-primary w-50">
 
-                        Create Assignment
+                        Create Material
 
                     </button>
 
@@ -185,6 +195,7 @@
     </div>
 
 </div>
+
 
 {{-- ================= STYLE ================= --}}
 <style>
@@ -202,6 +213,10 @@
 .btn{
     border-radius:10px;
     padding:10px;
+}
+
+textarea.form-control{
+    resize:none;
 }
 
 </style>

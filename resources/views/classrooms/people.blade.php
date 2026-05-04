@@ -96,12 +96,12 @@ function confirmDelete(e){
     e.preventDefault();
 
     Swal.fire({
-        title: 'Remove student?',
-        text: "This action cannot be undone!",
+        title: 'Remove Student?',
+        text: "This Action Can't be Undone!",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
-        confirmButtonText: 'Yes, delete'
+        confirmButtonText: 'Delete'
     }).then((result) => {
         if (result.isConfirmed) {
             e.target.submit();

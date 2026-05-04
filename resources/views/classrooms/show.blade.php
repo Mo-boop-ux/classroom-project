@@ -23,7 +23,6 @@
                           placeholder="Share something with your class..."
                           required>{{ old('description') }}</textarea>
 
-                {{-- MULTIPLE FILES --}}
                 <input type="file"
                        name="files[]"
                        multiple
@@ -44,15 +43,16 @@
 
         @php
             $isAssignment = !empty($post->assignment_id);
+            $isMaterial = !empty($post->material_id);
+
+            $postLink = $isAssignment
+                ? route('assignments.show', $post->assignment_id)
+                : ($isMaterial
+                    ? route('materials.show', $post->material_id)
+                    : null);
         @endphp
 
         <div class="card shadow-sm mb-3 border-0 post-card">
-
-            {{-- CLICK ONLY IF ASSIGNMENT --}}
-            @if($isAssignment)
-                <a href="{{ route('assignments.show', $post->assignment_id) }}"
-                   class="stretched-link"></a>
-            @endif
 
             <div class="card-body">
 
@@ -75,48 +75,94 @@
                             </small>
 
                             @if($isAssignment)
-                                <small class="text-primary fw-bold">
-                                    Assignment
-                                </small>
+                                <small class="text-primary fw-bold">Assignment</small>
+                            @elseif($isMaterial)
+                                <small class="text-success fw-bold">Material</small>
                             @endif
 
                         </div>
 
                     </div>
 
-                    {{-- DROPDOWN (FIXED Z-INDEX ISSUE) --}}
+                    {{-- DROPDOWN --}}
                     @if(
                         $post->user_id === auth()->id() ||
                         $post->classroom->teacher_id === auth()->id()
                     )
+                    <div class="dropdown">
+                        <button class="btn btn-light btn-sm dropdown-toggle"
+                                data-bs-toggle="dropdown">
+                            ⋮
+                        </button>
 
-        <div class="dropdown position-relative" style="z-index: 10;">
-            <button class="btn btn-light btn-sm dropdown-toggle"data-bs-toggle="dropdown"data-bs-display="static">
-             ⋮
-            </button>
-                            <ul class="dropdown-menu dropdown-menu-end shadow">
+                        <ul class="dropdown-menu dropdown-menu-end shadow">
 
-                                <li>
-                                    <a class="dropdown-item"
-                                       href="{{ route('posts.edit', $post->id) }}">
-                                        Edit
+                            <li>
+                                <a class="dropdown-item"
+                                   href="{{ route('posts.edit', $post->id) }}">
+                                    Edit
+                                </a>
+                            </li>
+
+                            <li>
+                                <form method="POST"
+                                      action="{{ route('posts.destroy', $post->id) }}"
+                                      onsubmit="return confirmDeletePost(event)">
+                                    @csrf
+                                    @method('DELETE')
+
+                                    <button class="dropdown-item text-danger">
+                                        Delete
+                                    </button>
+                                </form>
+                            </li>
+
+                        </ul>
+                    </div>
+                    @endif
+
+                </div>
+
+                {{-- ================= CLICKABLE CONTENT ================= --}}
+                <div class="{{ $postLink ? 'clickable-post mt-2' : 'mt-2' }}"
+                     @if($postLink)
+                        onclick="handlePostClick(event, '{{ $postLink }}')"
+                     @endif>
+
+                    <p class="mb-2">{{ $post->description }}</p>
+
+                    {{-- ATTACHMENTS --}}
+                    @if($post->attachments->count())
+
+                        <div class="attachment-box">
+
+                            @foreach($post->attachments as $file)
+
+                                @php
+                                    $ext = strtolower(pathinfo($file->file_path, PATHINFO_EXTENSION));
+                                @endphp
+
+                                @if(in_array($ext, ['jpg','jpeg','png','gif','webp']))
+                                    <img src="{{ asset('storage/' . $file->file_path) }}"
+                                         class="img-fluid rounded mb-2 clickable-img">
+                                @endif
+
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+
+                                    <small class="text-muted">
+                                        {{ basename($file->file_path) }}
+                                    </small>
+
+                                    <a href="{{ asset('storage/' . $file->file_path) }}"
+                                       target="_blank"
+                                       class="btn btn-sm btn-outline-primary"
+                                       onclick="event.stopPropagation()">
+                                        Open
                                     </a>
-                                </li>
 
-                                <li>
-                                    <form method="POST"
-                                          action="{{ route('posts.destroy', $post->id) }}"
-                                          onsubmit="return confirmDeletePost(event)">
-                                        @csrf
-                                        @method('DELETE')
+                                </div>
 
-                                        <button class="dropdown-item text-danger">
-                                            Delete
-                                        </button>
-                                    </form>
-                                </li>
-
-                            </ul>
+                            @endforeach
 
                         </div>
 
@@ -124,63 +170,20 @@
 
                 </div>
 
-                {{-- CONTENT --}}
-                <p class="mt-2 mb-2">{{ $post->description }}</p>
-
-                {{-- ================= ATTACHMENTS ================= --}}
-                @if($post->attachments->count())
-
-                    <div class="attachment-box">
-
-                        @foreach($post->attachments as $file)
-
-                            @php
-                                $ext = strtolower(pathinfo($file->file_path, PATHINFO_EXTENSION));
-                            @endphp
-
-                            {{-- IMAGE --}}
-                            @if(in_array($ext, ['jpg','jpeg','png','gif','webp']))
-                                <img src="{{ asset('storage/' . $file->file_path) }}"
-                                     class="img-fluid rounded mb-2 clickable-img">
-                            @endif
-
-                            {{-- FILE LINK --}}
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-
-                                <small class="text-muted">
-                                    {{ basename($file->file_path) }}
-                                </small>
-
-                                <a href="{{ asset('storage/' . $file->file_path) }}"
-                                   target="_blank"
-                                   class="btn btn-sm btn-outline-primary">
-                                    Open
-                                </a>
-
-                            </div>
-
-                        @endforeach
-
-                    </div>
-
-                @endif
-
-               {{-- ================= COMMENTS ONLY FOR POSTS ================= --}}
-                @if(!$isAssignment)
+                {{-- ================= COMMENTS ================= --}}
+                @if(!$isAssignment && !$isMaterial)
 
                 <div class="mt-3">
 
-                    {{-- LINK NOT BUTTON --}}
                     <a href="#"
-                       class="text-decoration-none"
+                       onclick="event.stopPropagation()"
                        data-bs-toggle="collapse"
                        data-bs-target="#comments-{{ $post->id }}">
-                        💬 Comments ({{ $post->comments->count() }})
+                         Comments ({{ $post->comments->count() }})
                     </a>
 
                     <div class="collapse mt-2" id="comments-{{ $post->id }}">
 
-                        {{-- COMMENTS LIST --}}
                         @forelse($post->comments as $comment)
 
                         <div class="comment-box d-flex justify-content-between">
@@ -195,12 +198,10 @@
                                     </small>
                                 </div>
 
-                                {{-- TEXT --}}
                                 <div id="text-{{ $comment->id }}">
                                     {{ $comment->description }}
                                 </div>
 
-                                {{-- EDIT --}}
                                 <form method="POST"
                                       action="{{ route('comments.update', $comment->id) }}"
                                       class="d-none mt-2"
@@ -215,6 +216,7 @@
                                                class="form-control">
 
                                         <button class="btn btn-success btn-sm">Save</button>
+
                                         <button type="button"
                                                 class="btn btn-secondary btn-sm"
                                                 onclick="cancelEdit({{ $comment->id }})">
@@ -225,14 +227,14 @@
 
                             </div>
 
-                            {{-- COMMENT 3 DOTS --}}
                             @if(
                                 $comment->user_id === auth()->id() ||
                                 $post->classroom->teacher_id === auth()->id()
                             )
                             <div class="dropdown ms-2">
                                 <button class="btn btn-light btn-sm"
-                                        data-bs-toggle="dropdown">
+                                        data-bs-toggle="dropdown"
+                                        onclick="event.stopPropagation()">
                                     ⋮
                                 </button>
 
@@ -271,7 +273,8 @@
                         {{-- ADD COMMENT --}}
                         <form method="POST"
                               action="{{ route('comments.store') }}"
-                              class="mt-2">
+                              class="mt-2"
+                              onclick="event.stopPropagation()">
                             @csrf
 
                             <input type="hidden" name="post_id" value="{{ $post->id }}">
@@ -309,6 +312,14 @@
 
 {{-- ================= JS ================= --}}
 <script>
+
+function handlePostClick(event, link){
+    if(event.target.closest('a, button, form, input')){
+        return;
+    }
+    window.location = link;
+}
+
 function editComment(id){
     document.getElementById('text-'+id).classList.add('d-none');
     document.getElementById('form-'+id).classList.remove('d-none');
@@ -323,12 +334,12 @@ function confirmDeletePost(e){
     e.preventDefault();
 
     Swal.fire({
-        title: 'Delete post?',
-        text: "This action cannot be undone!",
+        title: 'Delete Post?',
+        text: "This Action Can't be Undone!",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
-        confirmButtonText: 'Yes, delete'
+        confirmButtonText: 'Delete'
     }).then((result) => {
         if (result.isConfirmed) {
             e.target.submit();
@@ -342,12 +353,12 @@ function confirmDeleteComment(e){
     e.preventDefault();
 
     Swal.fire({
-        title: 'Delete comment?',
-        text: "This action cannot be undone!",
+        title: 'Delete Comment?',
+        text: "This Action Can't be Undone!",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
-        confirmButtonText: 'Yes, delete'
+        confirmButtonText: 'Delete'
     }).then((result) => {
         if (result.isConfirmed) {
             e.target.submit();
@@ -361,10 +372,6 @@ function confirmDeleteComment(e){
 
 {{-- ================= STYLE ================= --}}
 <style>
-
-.post-card {
-    transition: 0.2s ease;
-}
 
 .post-card:hover {
     transform: translateY(-3px);
@@ -396,20 +403,12 @@ function confirmDeleteComment(e){
     margin-bottom: 6px;
 }
 
-.clickable-img {
+.clickable-post {
     cursor: pointer;
-    max-height: 250px;
-    display:block;
-    margin-bottom: 10px;
 }
 
-.post-card .dropdown {
-    position: relative;
-    z-index: 20;
-}
-
-.post-card .stretched-link {
-    z-index: 1;
+.clickable-post:hover {
+    background: #f8f9fa;
 }
 
 </style>

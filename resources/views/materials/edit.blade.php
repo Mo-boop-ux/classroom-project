@@ -14,20 +14,20 @@
         <div class="d-flex align-items-center gap-3">
 
             <div class="page-icon">
-                📝
+                📄
             </div>
 
             <div>
-                <h2 class="fw-bold mb-1">Edit Assignment</h2>
+                <h2 class="fw-bold mb-1">Edit Material</h2>
 
                 <p class="text-muted mb-0">
-                    Update assignment details, due date, subject, and attachments
+                    Update material details, subject, and attachments
                 </p>
             </div>
 
         </div>
 
-        <a href="{{ route('assignments.show', $assignment->id) }}"
+        <a href="{{ route('materials.show', $material->id) }}"
            class="btn btn-outline-dark rounded-pill px-4">
             ← Back
         </a>
@@ -45,9 +45,9 @@
                 <div class="card-body p-4">
 
                     <form method="POST"
-                          action="{{ route('assignments.update', $assignment->id) }}"
+                          action="{{ route('materials.update', $material->id) }}"
                           enctype="multipart/form-data"
-                          id="assignmentForm">
+                          id="materialForm">
 
                         @csrf
                         @method('PUT')
@@ -63,8 +63,8 @@
                             <input type="text"
                                    name="title"
                                    class="form-control custom-input"
-                                   value="{{ old('title', $assignment->title) }}"
-                                   placeholder="Enter assignment title"
+                                   value="{{ old('title', $material->title) }}"
+                                   placeholder="Enter material title"
                                    required>
 
                             @error('title')
@@ -90,10 +90,10 @@
                                      No Topic
                                 </option>
 
-                                @foreach($assignment->classroom->subjects as $subject)
+                                @foreach($material->classroom->subjects as $subject)
 
                                     <option value="{{ $subject->id }}"
-                                        {{ $assignment->subject_id == $subject->id ? 'selected' : '' }}>
+                                        {{ $material->subject_id == $subject->id ? 'selected' : '' }}>
 
                                          {{ $subject->name }}
 
@@ -104,7 +104,7 @@
                             </select>
 
                             <small class="text-muted">
-                                Organize this assignment under a classroom subject
+                                Organize this material under a classroom subject
                             </small>
 
                         </div>
@@ -114,13 +114,19 @@
                         <div class="mb-4">
 
                             <label class="form-label fw-semibold">
-                                 Instructions
+                                 Description
                             </label>
 
                             <textarea name="description"
                                       rows="5"
                                       class="form-control custom-input"
-                                      placeholder="Write assignment instructions...">{{ old('description', $assignment->description) }}</textarea>
+                                      placeholder="Write material description...">{{ old('description', $material->description) }}</textarea>
+
+                            @if(!$material->description)
+                                <div class="text-muted small mt-2">
+                                    No description added yet
+                                </div>
+                            @endif
 
                             @error('description')
                                 <div class="text-danger small mt-1">
@@ -131,28 +137,7 @@
                         </div>
 
 
-                        {{-- ================= DUE DATE ================= --}}
-                        <div class="mb-4">
-
-                            <label class="form-label fw-semibold">
-                                 Due Date
-                            </label>
-
-                            <input type="date"
-                                   name="due_date"
-                                   class="form-control custom-input"
-                                   value="{{ old('due_date', $assignment->due_date) }}">
-
-                            @error('due_date')
-                                <div class="text-danger small mt-1">
-                                    {{ $message }}
-                                </div>
-                            @enderror
-
-                        </div>
-
-
-                        {{-- ================= FILES ================= --}}
+                        {{-- ================= DRAG & DROP ================= --}}
                         <div class="mb-4">
 
                             <label class="form-label fw-semibold">
@@ -203,7 +188,7 @@
                         {{-- ================= BUTTONS ================= --}}
                         <div class="d-flex flex-column flex-md-row gap-3">
 
-                            <a href="{{ route('assignments.show', $assignment->id) }}"
+                            <a href="{{ route('materials.show', $material->id) }}"
                                class="btn btn-light border w-100 py-2">
 
                                 Cancel
@@ -241,7 +226,7 @@
                         <div>
 
                             <h5 class="fw-bold mb-0">
-                                📎 Attachments
+                                 Attachments
                             </h5>
 
                             <small class="text-muted">
@@ -251,14 +236,14 @@
                         </div>
 
                         <span class="badge rounded-pill bg-primary px-3 py-2">
-                            {{ $assignment->attachments->count() }}
+                            {{ $material->attachments->count() }}
                         </span>
 
                     </div>
 
 
                     {{-- FILES --}}
-                    @forelse($assignment->attachments as $file)
+                    @forelse($material->attachments as $file)
 
                         @php
                             $url = asset('storage/' . $file->file_path);
@@ -299,7 +284,7 @@
                                     </div>
 
                                     <div class="text-muted small">
-                                        Assignment Attachment
+                                        Material Attachment
                                     </div>
 
                                 </a>
@@ -317,21 +302,20 @@
 
                                     </button>
 
-                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 attachment-dropdown">
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
 
-                
                                         <li>
 
                                             <form method="POST"
-                                                  action="{{ route('assignment.attachments.destroy', $file->id) }}"
-                                                  onsubmit="return confirmDeleteAttachment(event)">
+                                                  action="{{ route('material.attachments.destroy', $file->id) }}"
+                                                  onsubmit="return confirmDelete(event)">
 
                                                 @csrf
                                                 @method('DELETE')
 
                                                 <button class="dropdown-item text-danger">
 
-                                                     Delete
+                                                    Delete
 
                                                 </button>
 
@@ -377,12 +361,12 @@
 {{-- ================= SCRIPT ================= --}}
 <script>
 
-function confirmDeleteAttachment(e){
+function confirmDelete(e){
 
     e.preventDefault();
 
     Swal.fire({
-        title: 'Delete Attachment?',
+        title: 'Delete attachment?',
         text: "This action can't be undone.",
         icon: 'warning',
         showCancelButton: true,
@@ -402,7 +386,7 @@ function confirmDeleteAttachment(e){
 
 
 // ================= SAVE BUTTON =================
-document.getElementById('assignmentForm')
+document.getElementById('materialForm')
 .addEventListener('submit', function(){
 
     const btn = document.getElementById('saveBtn');
@@ -503,21 +487,10 @@ function renderFiles(){
 .attachment-panel{
     top:20px;
     max-height:calc(100vh - 40px);
-    overflow:visible !important;
+    overflow:auto;
     background:#fcfcfd;
 }
 
-.attachment-card{
-    padding:14px;
-    border-radius:16px;
-    border:1px solid #eee;
-    background:#fff;
-    transition:.2s;
-}
-
-.attachment-card:hover{
-    border-color:#dcdcdc;
-}
 
 .attachment-image{
     width:58px;
@@ -586,15 +559,6 @@ function renderFiles(){
     border-radius:10px;
     margin-bottom:8px;
     font-size:14px;
-}
-
-.attachment-dropdown{
-    z-index:99999 !important;
-    position:absolute !important;
-}
-
-.dropdown{
-    position:relative;
 }
 
 </style>

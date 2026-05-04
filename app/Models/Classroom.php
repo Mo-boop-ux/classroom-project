@@ -38,5 +38,14 @@ public function assignments()
     return $this->hasMany(Assignment::class);
 }
 
+public function materials()
+{
+    return $this->hasMany(Material::class);
+}
+
+public function subjects()
+{
+    return $this->hasMany(Subject::class);
+}
 
 }

@@ -34,11 +34,11 @@
 
                             @if($isExpired)
                                 <span class="badge bg-danger">
-                                    ⛔ Expired ({{ $assignment->due_date }})
+                                     Expired ({{ $assignment->due_date }})
                                 </span>
                             @else
                                 <span class="badge bg-success">
-                                    ⏳ Due: {{ $assignment->due_date }}
+                                     Due: {{ $assignment->due_date }}
                                 </span>
                             @endif
 
@@ -75,7 +75,7 @@
                             <li>
                                 <form method="POST"
                                       action="{{ route('assignments.destroy', $assignment->id) }}"
-                                      onsubmit="return confirmDelete(event)"">
+                                      onsubmit="return confirmDelete(event)">
 
                                     @csrf
                                     @method('DELETE')
@@ -196,7 +196,7 @@
                 @if($mySubmission)
 
                     <div class="alert alert-success">
-                        ✅ Submitted
+                         Submitted
                     </div>
 
                     @if($mySubmission->file)
@@ -258,12 +258,12 @@ function confirmDelete(e){
     e.preventDefault();
 
     Swal.fire({
-        title: 'Delete assignment?',
-        text: "This action cannot be undone!",
+        title: 'Delete Assignment?',
+        text: "This Action Can't be Undone!",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
-        confirmButtonText: 'Yes, delete'
+        confirmButtonText: 'Delete'
     }).then((result) => {
         if (result.isConfirmed) {
             e.target.submit();

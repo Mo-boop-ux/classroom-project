@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\NewPostMail;
 
-
 class AssignmentController extends Controller
 {
     /*
@@ -21,7 +20,7 @@ class AssignmentController extends Controller
     */
     public function create($id)
     {
-        $classroom = Classroom::findOrFail($id);
+        $classroom = Classroom::with('subjects')->findOrFail($id);
 
         if ($classroom->teacher_id !== auth()->id()) {
             abort(403);
@@ -38,11 +37,12 @@ class AssignmentController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'due_date' => 'nullable|date',
+            'title'        => 'required|string|max:255',
+            'description'  => 'nullable|string',
+            'due_date'     => 'nullable|date',
             'classroom_id' => 'required|exists:classrooms,id',
-            'files.*' => 'nullable|file|max:10240',
+            'subject_id'   => 'nullable|exists:subjects,id',
+            'files.*'      => 'nullable|file|max:10240',
         ]);
 
         $classroom = Classroom::findOrFail($request->classroom_id);
@@ -51,16 +51,17 @@ class AssignmentController extends Controller
             abort(403);
         }
 
-        // CREATE ASSIGNMENT
+        // ================= CREATE ASSIGNMENT =================
         $assignment = Assignment::create([
-            'title' => $request->title,
-            'description' => $request->description,
-            'due_date' => $request->due_date,
+            'title'        => $request->title,
+            'description'  => $request->description,
+            'due_date'     => $request->due_date,
             'classroom_id' => $classroom->id,
-            'user_id' => auth()->id(),
+            'subject_id'   => $request->subject_id,
+            'user_id'      => auth()->id(),
         ]);
 
-        // ================= MULTIPLE FILES =================
+        // ================= ATTACHMENTS =================
         if ($request->hasFile('files')) {
 
             foreach ($request->file('files') as $file) {
@@ -69,30 +70,31 @@ class AssignmentController extends Controller
 
                 AssignmentAttachment::create([
                     'assignment_id' => $assignment->id,
-                    'file_path' => $path
+                    'file_path'     => $path
                 ]);
             }
         }
 
         // ================= STREAM POST =================
         $post = Post::create([
-            'description' => "📚 New Assignment: {$assignment->title}",
-            'classroom_id' => $classroom->id,
-            'user_id' => auth()->id(),
-            'type' => 'assignment',
+            'description'   => $assignment->title,
+            'classroom_id'  => $classroom->id,
+            'user_id'       => auth()->id(),
+            'type'          => 'assignment',
             'assignment_id' => $assignment->id
         ]);
 
-        $classroom = Classroom::with('students')
-            ->findOrFail($request->classroom_id);
+        // ================= EMAIL STUDENTS =================
+        $classroom = Classroom::with('students')->findOrFail($classroom->id);
 
-        $recipients = $classroom->students
-            ->where('id', '!=', auth()->id());
+        foreach ($classroom->students as $student) {
 
-        foreach ($recipients as $student) {
-            Mail::to($student->email)->queue(
-                new NewPostMail($post, $classroom)
-            );
+            if ($student->id !== auth()->id()) {
+
+                Mail::to($student->email)->queue(
+                    new NewPostMail($post, $classroom)
+                );
+            }
         }
 
         return redirect()
@@ -102,7 +104,7 @@ class AssignmentController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | SHOW ASSIGNMENT
+    | SHOW
     |--------------------------------------------------------------------------
     */
     public function show($id)
@@ -110,52 +112,14 @@ class AssignmentController extends Controller
         $assignment = Assignment::with([
             'submissions.user',
             'attachments',
-            'classroom'
+            'classroom',
+            'subject'
         ])->findOrFail($id);
 
         return view('assignments.show', [
             'assignment' => $assignment,
-            'classroom' => $assignment->classroom
+            'classroom'  => $assignment->classroom
         ]);
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | DELETE ASSIGNMENT
-    |--------------------------------------------------------------------------
-    */
-    public function destroy($id)
-    {
-        $assignment = Assignment::with('attachments', 'submissions')->findOrFail($id);
-
-        if ($assignment->classroom->teacher_id !== auth()->id()) {
-            abort(403);
-        }
-
-        // delete attachments files
-        foreach ($assignment->attachments as $file) {
-            Storage::disk('public')->delete($file->file_path);
-        }
-
-        $assignment->attachments()->delete();
-
-        // delete submissions files
-        foreach ($assignment->submissions as $submission) {
-            if ($submission->file) {
-                Storage::disk('public')->delete($submission->file);
-            }
-        }
-
-        $assignment->submissions()->delete();
-
-        // delete related posts
-        Post::where('assignment_id', $assignment->id)->delete();
-
-        $assignment->delete();
-
-        return redirect()
-            ->route('classrooms.classwork', $assignment->classroom_id)
-            ->with('success', 'Assignment deleted successfully');
     }
 
     /*
@@ -165,7 +129,10 @@ class AssignmentController extends Controller
     */
     public function edit($id)
     {
-        $assignment = Assignment::with(['classroom', 'attachments'])->findOrFail($id);
+        $assignment = Assignment::with([
+            'classroom.subjects',
+            'attachments'
+        ])->findOrFail($id);
 
         if ($assignment->classroom->teacher_id !== auth()->id()) {
             abort(403);
@@ -181,27 +148,29 @@ class AssignmentController extends Controller
     */
     public function update(Request $request, $id)
     {
-        $assignment = Assignment::with('attachments')->findOrFail($id);
+        $assignment = Assignment::with('attachments', 'classroom')->findOrFail($id);
 
         if ($assignment->classroom->teacher_id !== auth()->id()) {
             abort(403);
         }
 
         $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'due_date' => 'nullable|date',
-            'files.*' => 'nullable|file|max:10240',
+            'title'        => 'required|string|max:255',
+            'description'  => 'nullable|string',
+            'due_date'     => 'nullable|date',
+            'subject_id'   => 'nullable|exists:subjects,id',
+            'files.*'      => 'nullable|file|max:10240',
         ]);
 
-        // UPDATE BASIC INFO
+        // ================= UPDATE =================
         $assignment->update([
-            'title' => $request->title,
+            'title'       => $request->title,
             'description' => $request->description,
-            'due_date' => $request->due_date,
+            'due_date'    => $request->due_date,
+            'subject_id'  => $request->subject_id,
         ]);
 
-        // ================= ADD NEW FILES =================
+        // ================= NEW FILES =================
         if ($request->hasFile('files')) {
 
             foreach ($request->file('files') as $file) {
@@ -210,13 +179,52 @@ class AssignmentController extends Controller
 
                 AssignmentAttachment::create([
                     'assignment_id' => $assignment->id,
-                    'file_path' => $path
+                    'file_path'     => $path
                 ]);
             }
         }
 
         return redirect()
-            ->route('classrooms.classwork', $assignment->classroom_id)
+            ->route('assignments.show', $assignment->id)
             ->with('success', 'Assignment updated successfully!');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | DELETE
+    |--------------------------------------------------------------------------
+    */
+    public function destroy($id)
+    {
+        $assignment = Assignment::with(['attachments', 'submissions', 'classroom'])->findOrFail($id);
+
+        if ($assignment->classroom->teacher_id !== auth()->id()) {
+            abort(403);
+        }
+
+        // delete attachments
+        foreach ($assignment->attachments as $file) {
+            Storage::disk('public')->delete($file->file_path);
+        }
+        $assignment->attachments()->delete();
+
+        // delete submissions
+        foreach ($assignment->submissions as $submission) {
+            if ($submission->file) {
+                Storage::disk('public')->delete($submission->file);
+            }
+        }
+        $assignment->submissions()->delete();
+
+        // delete posts
+        Post::where('assignment_id', $assignment->id)->delete();
+
+        $classroomId = $assignment->classroom_id;
+
+        $assignment->delete();
+
+        return redirect()
+            ->route('classrooms.classwork', $classroomId)
+            ->with('success', 'Assignment deleted successfully');
     }
 }

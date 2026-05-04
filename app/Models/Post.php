@@ -17,7 +17,8 @@ class Post extends Model
         'classroom_id',
         'user_id',
         'type',
-        'assignment_id'
+        'assignment_id',
+        'material_id'
     ];
 
     // ================= RELATIONS =================
@@ -46,5 +47,10 @@ class Post extends Model
     public function attachments()
     {
         return $this->hasMany(PostAttachment::class);
+    }
+
+    public function material()  
+    {
+    return $this->belongsTo(Material::class);
     }
 }

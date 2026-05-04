@@ -2,159 +2,234 @@
 
 @section('classroom-content')
 
-@php
-    use Carbon\Carbon;
-@endphp
+@php use Carbon\Carbon; @endphp
 
 <div class="container">
 
-    {{-- HEADER --}}
+    {{-- ================= HEADER ================= --}}
     <div class="mb-4">
-        <h2 class="fw-bold">📄 Assignments</h2>
+        <h2 class="fw-bold"> Classwork</h2>
         <p class="text-muted">{{ $classroom->name }}</p>
     </div>
 
-    {{-- FILTER --}}
-    <div class="mb-3">
-        <button class="btn btn-light border w-100 text-start"
-                data-bs-toggle="collapse"
-                data-bs-target="#filterBox">
-            🔽 Filter Assignments
-        </button>
+    {{-- ================= SINGLE CLEAN DROPDOWN ================= --}}
+    <div class="mb-4">
 
-        <div class="collapse mt-2" id="filterBox">
+        <div class="dropdown">
 
-            <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-dark dropdown-toggle w-100"
+                    data-bs-toggle="dropdown">
+                  Classwork
+            </button>
 
-                <button class="btn btn-sm btn-outline-dark" onclick="filterAssignments('all')">
-                    All
-                </button>
+            <ul class="dropdown-menu w-100 shadow">
 
-                <button class="btn btn-sm btn-outline-success" onclick="filterAssignments('submitted')">
-                    Submitted
-                </button>
+                {{-- ALL --}}
+                <li>
+                    <button class="dropdown-item" onclick="filterItems('all')">
+                         All
+                    </button>
+                </li>
 
-                <button class="btn btn-sm btn-outline-warning" onclick="filterAssignments('missing')">
-                    Missing
-                </button>
+                <li><hr class="dropdown-divider"></li>
 
-                <button class="btn btn-sm btn-outline-danger" onclick="filterAssignments('late')">
-                    Late
-                </button>
+                {{-- TYPE FILTERS --}}
 
-            </div>
+                <li>
+                    <button class="dropdown-item text-success" onclick="filterItems('submitted')">
+                         Submitted 
+                    </button>
+                </li>
+
+                <li>
+                    <button class="dropdown-item text-warning" onclick="filterItems('missing')">
+                         Missing 
+                    </button>
+                </li>
+
+                <li>
+                    <button class="dropdown-item text-danger" onclick="filterItems('late')">
+                         Late 
+                    </button>
+                </li>
+
+                <li><hr class="dropdown-divider"></li>
+
+                <li>
+                    <button class="dropdown-item" onclick="filterItems('material')">
+                         Materials
+                    </button>
+                </li>
+
+            </ul>
 
         </div>
+
     </div>
 
-    {{-- ASSIGNMENTS --}}
-    @forelse($classroom->assignments as $assignment)
 
-        @php
-            $due = $assignment->due_date ? Carbon::parse($assignment->due_date) : null;
+    {{-- ================= MERGE DATA ================= --}}
+    @php
+        $items = collect();
 
-            $mySubmission = $assignment->submissions
+        foreach ($classroom->assignments as $a) {
+
+            $due = $a->due_date ? Carbon::parse($a->due_date) : null;
+
+            $mySubmission = $a->submissions
                 ->where('user_id', auth()->id())
                 ->first();
 
             $isSubmitted = (bool) $mySubmission;
-
             $isLate = !$isSubmitted && $due && now()->gt($due);
 
             $status = $isSubmitted ? 'submitted' : ($isLate ? 'late' : 'missing');
-        @endphp
 
-        <div class="assignment-item card border-0 shadow-sm mb-3 hover-card"
-             data-status="{{ $status }}">
+            $items->push((object)[
+                'type' => 'assignment',
+                'status' => $status,
+                'data' => $a,
+                'created_at' => $a->created_at
+            ]);
+        }
 
-            {{-- CLICKABLE CARD --}}
-            <a href="{{ route('assignments.show', $assignment->id) }}"
-               class="text-decoration-none text-dark">
+        foreach ($classroom->materials ?? [] as $m) {
+            $items->push((object)[
+                'type' => 'material',
+                'status' => 'material',
+                'data' => $m,
+                'created_at' => $m->created_at
+            ]);
+        }
 
-                <div class="card-body d-flex justify-content-between align-items-center">
+        $items = $items->sortByDesc('created_at');
+    @endphp
 
-                    {{-- LEFT --}}
-                    <div>
 
-                        <h5 class="fw-bold mb-1">
-                            {{ $assignment->title }}
-                        </h5>
+    {{-- ================= ITEMS ================= --}}
+    @forelse($items as $item)
 
-                        <p class="text-muted mb-2">
-                            {{ $assignment->description }}
-                        </p>
+        {{-- ASSIGNMENT --}}
+        @if($item->type === 'assignment')
 
-                        {{-- DUE DATE --}}
-                        <small class="text-muted d-block">
-                            @if($due)
-                                Due: {{ $due->format('M d, Y - h:i A') }}
-                            @else
-                                No due date
-                            @endif
-                        </small>
+            @php $a = $item->data; @endphp
 
-                        {{-- BADGES --}}
-                        <div class="mt-2 d-flex gap-2 flex-wrap">
+            <div class="item-card card border-0 shadow-sm mb-3"
+                 data-type="{{ $item->status }}">
 
-                            @if($isSubmitted)
-                                <span class="badge bg-success">Submitted</span>
+                <a href="{{ route('assignments.show', $a->id) }}"
+                   class="text-decoration-none text-dark">
 
-                            @elseif($isLate)
-                                <span class="badge bg-danger">Late</span>
+                    <div class="card-body d-flex justify-content-between align-items-center">
 
-                            @else
-                                <span class="badge bg-warning text-dark">Missing</span>
-                            @endif
+                        <div>
+
+                            <div class="text-primary small fw-bold mb-1">
+                                 Assignment
+                            </div>
+
+                            <h5 class="fw-bold mb-1">{{ $a->title }}</h5>
+
+                            <p class="text-muted mb-0">{{ $a->description }}</p>
 
                         </div>
 
+                        <div class="text-muted fs-4">›</div>
+
                     </div>
 
-                    {{-- RIGHT ARROW --}}
-                    <div class="text-muted fs-4">
-                        ›
+                </a>
+
+            </div>
+
+        {{-- MATERIAL --}}
+        @elseif($item->type === 'material')
+
+            @php $m = $item->data; @endphp
+
+            <div class="item-card card border-0 shadow-sm mb-3"
+                 data-type="material">
+
+                <a href="{{ route('materials.show', $m->id) }}"
+                   class="text-decoration-none text-dark">
+
+                    <div class="card-body d-flex justify-content-between align-items-center">
+
+                        <div>
+
+                            <div class="text-success small fw-bold mb-1">
+                                Material
+                            </div>
+
+                            <h5 class="fw-bold mb-1">{{ $m->title }}</h5>
+
+                            <p class="text-muted mb-0">{{ $m->description }}</p>
+
+                        </div>
+
+                        <div class="text-muted fs-4">›</div>
+
                     </div>
 
-                </div>
+                </a>
 
-            </a>
+            </div>
 
-        </div>
+        @endif
 
     @empty
 
         <div class="text-center text-muted py-5">
-            No assignments yet
+            No classwork yet
         </div>
 
     @endforelse
 
 </div>
 
-{{-- FILTER SCRIPT --}}
+
+{{-- ================= FILTER SCRIPT ================= --}}
 <script>
-function filterAssignments(type) {
+function filterItems(type) {
 
-    document.querySelectorAll('.assignment-item').forEach(item => {
+    document.querySelectorAll('.item-card').forEach(item => {
 
-        const status = item.getAttribute('data-status');
+        const t = item.getAttribute('data-type');
 
         item.style.display =
-            (type === 'all' || status === type) ? 'block' : 'none';
+            (type === 'all' || t === type) ? 'block' : 'none';
     });
 }
 </script>
 
-{{-- STYLES --}}
+
+{{-- ================= STYLE ================= --}}
 <style>
-.hover-card {
+
+.dropdown-menu {
+    border-radius: 12px;
+    padding: 8px;
+}
+
+.dropdown-item {
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+
+.dropdown-item:hover {
+    background: #f3f4f6;
+}
+
+.item-card {
+    border-radius: 14px;
     transition: 0.2s ease;
 }
 
-.hover-card:hover {
+.item-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 8px 20px rgba(0,0,0,0.12);
 }
+
 </style>
 
 @endsection

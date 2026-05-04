@@ -17,6 +17,7 @@ class Assignment extends Model
         'due_date',
         'classroom_id',
         'user_id',
+        'subject_id'
     ];
 
     // ================= CLASSROOM =================
@@ -48,4 +49,10 @@ class Assignment extends Model
     {
         return $this->hasMany(AssignmentAttachment::class);
     }
+
+    public function subject()
+{
+    return $this->belongsTo(Subject::class);
+}
+
 }

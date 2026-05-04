@@ -153,12 +153,12 @@ function confirmDelete(e){
     e.preventDefault();
 
     Swal.fire({
-        title: 'Delete classroom?',
-        text: "This action cannot be undone!",
+        title: 'Delete Classroom?',
+        text: "This Action Can't be Undone!",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
-        confirmButtonText: 'Yes, delete'
+        confirmButtonText: 'Delete'
     }).then((result) => {
         if (result.isConfirmed) {
             e.target.submit();
@@ -172,11 +172,11 @@ function confirmLeave(e){
     e.preventDefault();
 
     Swal.fire({
-        title: 'Leave classroom?',
+        title: 'Leave Classroom?',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
-        confirmButtonText: 'Yes, leave'
+        confirmButtonText: 'Leave'
     }).then((result) => {
         if (result.isConfirmed) {
             e.target.submit();

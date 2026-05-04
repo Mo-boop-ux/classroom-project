@@ -4,7 +4,7 @@
 
 <div class="container py-4">
 
-    <h2 class="fw-bold mb-4">⚙️ Profile Settings</h2>
+    <h2 class="fw-bold mb-4"> Profile Settings</h2>
 
     {{-- SUCCESS --}}
     @if(session('success'))
@@ -18,7 +18,7 @@
 
             <div class="card shadow-sm border-0 p-3">
 
-                <h5 class="fw-bold mb-3">👤 Profile Info</h5>
+                <h5 class="fw-bold mb-3"> Profile Info</h5>
 
                 <form method="POST" action="{{ route('profile.update') }}">
                     @csrf
@@ -51,7 +51,7 @@
 
             <div class="card shadow-sm border-0 p-3">
 
-                <h5 class="fw-bold mb-3">🔒 Change Password</h5>
+                <h5 class="fw-bold mb-3"> Change Password</h5>
 
                 <form method="POST" action="{{ route('profile.password') }}">
                     @csrf
@@ -87,7 +87,7 @@
 
             <div class="card shadow-sm border-0 p-3 border-danger">
 
-                <h5 class="fw-bold text-danger mb-3">⚠️ Delete Account</h5>
+                <h5 class="fw-bold text-danger mb-3"> Delete Account</h5>
 
                 <p class="text-muted small">
                     This action is permanent. All your classes and data will be lost.
@@ -121,12 +121,12 @@ function confirmDelete(e){
     e.preventDefault();
 
     Swal.fire({
-        title: 'Delete account?',
-        text: "This action cannot be undone!",
+        title: 'Delete Account?',
+        text: "This Action Can't be Undone!",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
-        confirmButtonText: 'Yes, delete'
+        confirmButtonText: 'Delete'
     }).then((result) => {
         if (result.isConfirmed) {
             e.target.submit();
